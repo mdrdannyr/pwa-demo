@@ -1,2 +1,5 @@
-// Stamped from `git rev-parse --short HEAD` (see tools/stamp-version.sh).
-window.APP_VERSION = "09e413e";
+// Build metadata: stamped from git (see tools/stamp-version.sh).
+// Loaded by both the page and the service worker so CACHE_NAME and the
+// Settings display can never drift apart.
+self.APP_VERSION = "7052d81";
+self.APP_CACHE_VERSION = 27;

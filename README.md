@@ -53,7 +53,7 @@ The sidebar has **Tasks** and **Settings** pages. The signed-in user's avatar an
 
 You can link directly to it with `#settings`.
 
-The version shown at the bottom comes from `version.js`, which is stamped from the current commit with `tools/stamp-version.sh` when a build is prepared.
+The version shown at the bottom comes from `version.js`: the commit SHA is stamped with `tools/stamp-version.sh`, and the `v` number is the service-worker cache version shared with `sw.js`. Bump `APP_CACHE_VERSION` in `version.js` when app files change so devices pick up the new build.
 
 ## Drive sync and sharing
 

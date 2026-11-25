@@ -1,4 +1,5 @@
-const CACHE_NAME = "pwa-demo-v27";
+importScripts("./version.js");
+const CACHE_NAME = `pwa-demo-v${self.APP_CACHE_VERSION}`;
 const APP_SHELL = [
   "./",
   "./index.html",

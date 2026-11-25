@@ -279,7 +279,7 @@
     swState.textContent = "Service workers not supported.";
   }
 
-  appVersion.textContent = `Version: ${window.APP_VERSION || "unknown"}`;
+  appVersion.textContent = `Version: ${window.APP_VERSION || "unknown"} · v${window.APP_CACHE_VERSION || "?"}`;
   migrateLegacyTasks();
   updateStatus();
   showPage(location.hash.slice(1));
