@@ -230,6 +230,7 @@
   // Background calls use silentOnly and simply fail if a fresh token cannot be obtained.
   async function getAccessToken(options = {}) {
     const silentOnly = options.silentOnly === true;
+    const prompt = typeof options.prompt === "string" ? options.prompt : (silentOnly ? "" : "consent");
     if (accessToken && Date.now() < tokenExpiresAt - 60000) return accessToken;
     if (silentOnly && !consentGranted) throw new Error("Drive permission has not been granted");
 
@@ -246,7 +247,7 @@
       }
       pendingToken = { resolve, reject };
       try {
-        requestToken(silentOnly ? "" : "consent");
+        requestToken(prompt);
       } catch (err) {
         pendingToken = null;
         reject(err);
@@ -262,10 +263,16 @@
     return info;
   }
 
-  // One user action: account chooser + consent + profile + Drive access token.
+  // Try a silent renewal first. Only fall back to the consent popup when
+  // Google no longer has a usable session, so reconnecting is normally quiet.
   async function connect() {
     if (!configured) throw new Error("Google sign-in is not configured");
-    const token = await getAccessToken();
+    let token;
+    try {
+      token = await getAccessToken({ silentOnly: true });
+    } catch {
+      token = await getAccessToken({ prompt: "consent" });
+    }
     const info = await fetchUserInfo(token);
     saveProfile({
       sub: info.sub,

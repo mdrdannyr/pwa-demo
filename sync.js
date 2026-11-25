@@ -295,10 +295,12 @@
     });
   }
 
-  function setStatus(nextState, nextMessage) {
+  function setStatus(nextState, nextMessage, options = {}) {
     syncState = nextState;
     message = nextMessage;
-    needsConnect = !!profile && (nextState === "ready" || nextState === "error");
+    needsConnect = !!profile && (typeof options.needsConnect === "boolean"
+      ? options.needsConnect
+      : nextState === "ready");
     emitStatus();
   }
 
@@ -638,10 +640,11 @@
           markSynced();
           setStatus("synced", `Synced to ${fileLabel()}`);
         } catch (recreateErr) {
-          setStatus("error", readableError(recreateErr));
+          setStatus("error", readableError(recreateErr), { needsConnect: false });
         }
       } else {
-        setStatus(navigator.onLine ? "error" : "offline", readableError(err));
+        const authError = err.status === 401 || err.status === 403;
+        setStatus(navigator.onLine ? "error" : "offline", readableError(err), { needsConnect: authError });
       }
     } finally {
       syncing = false;
@@ -713,7 +716,7 @@
   // finishes the Drive setup with the token it just obtained.
   function connect() {
     return window.AppAuth.connect().catch((err) => {
-      setStatus("error", readableError(err));
+      setStatus("error", readableError(err), { needsConnect: true });
     });
   }
 
