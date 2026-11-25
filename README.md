@@ -45,7 +45,7 @@ The sidebar has **Tasks** and **Settings** pages. The signed-in user's avatar an
 2. **Share your file with others** — explanation and email invite form for giving collaborators editor access to your data file.
 3. **Open a file shared with you** — explanation and the "Open shared file" button for loading someone else's shared data file.
 
-You can link directly to it with `#settings` (old `#setup` links still work).
+You can link directly to it with `#settings`.
 
 ## Drive sync and sharing
 

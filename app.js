@@ -31,8 +31,7 @@
 
   // ---------- Pages ----------
   function showPage(name) {
-    const requested = name === "setup" ? "settings" : name; // old #setup links still work
-    const page = pages[requested] ? requested : "tasks";
+    const page = pages[name] ? name : "tasks";
     Object.entries(pages).forEach(([key, el]) => {
       el.hidden = key !== page;
     });
