@@ -29,15 +29,30 @@
     <ul id="task-list"></ul>
     <p id="empty" class="empty" hidden>No tasks yet. Add one above. It works offline too.</p>
 
+    <section id="drive-panel" class="drive-panel" aria-label="Google Drive sync">
+      <div class="drive-head">
+        <span id="sync-state" class="sync-state" role="status">Local only</span>
+        <button id="sync-now" class="secondary" type="button" hidden>Sync now</button>
+      </div>
+      <p id="sync-detail" class="sync-detail"></p>
+      <button id="open-shared" class="secondary" type="button" hidden>Open shared file</button>
+      <form id="share-form" class="share-form" hidden>
+        <input id="share-email" type="email" placeholder="Collaborator's email" aria-label="Collaborator email" required>
+        <button type="submit">Share</button>
+      </form>
+      <p id="share-note" class="share-note" role="status"></p>
+    </section>
+
     <button id="install-btn" class="install" hidden>Install app</button>
   </main>
 
   <footer>
-    <small>Tasks are saved on this device. <span id="sw-state"></span></small>
+    <small>Tasks are saved on this device and synced to your Google Drive when connected. <span id="sw-state"></span></small>
   </footer>
 
   <script src="config.js"></script>
   <script src="auth.js"></script>
+  <script src="sync.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

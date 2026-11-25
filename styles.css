@@ -20,6 +20,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
@@ -152,3 +153,63 @@ header { flex-wrap: wrap; gap: 0.5rem 1rem; }
 }
 
 .auth-note { font-size: 0.8rem; opacity: 0.85; }
+
+/* ---------- Drive sync panel ---------- */
+.drive-panel {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.drive-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sync-state {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.sync-state.syncing, .sync-state.connecting { color: var(--accent); }
+.sync-state.synced { color: #16a34a; }
+.sync-state.offline, .sync-state.error { color: var(--off); }
+.sync-state.local { color: var(--muted); }
+
+.sync-detail, .share-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  word-break: break-word;
+}
+
+button.secondary {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.85rem;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.share-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.share-form input[type="email"] {
+  flex: 1;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+}
+.share-form button { padding: 0.55rem 0.9rem; font-size: 0.9rem; }
+
+#open-shared { margin-top: 0.75rem; }

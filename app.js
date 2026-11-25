@@ -1,5 +1,5 @@
 (() => {
-  const STORAGE_KEY = "pwa-demo-tasks";
+  const LEGACY_KEY = "pwa-demo-tasks";
 
   const form = document.getElementById("task-form");
   const input = document.getElementById("task-input");
@@ -8,27 +8,28 @@
   const statusEl = document.getElementById("status");
   const swState = document.getElementById("sw-state");
   const installBtn = document.getElementById("install-btn");
+  const syncStateEl = document.getElementById("sync-state");
+  const syncDetailEl = document.getElementById("sync-detail");
+  const syncNowBtn = document.getElementById("sync-now");
+  const openSharedBtn = document.getElementById("open-shared");
+  const shareForm = document.getElementById("share-form");
+  const shareEmail = document.getElementById("share-email");
+  const shareNote = document.getElementById("share-note");
 
-  // ---------- Tasks (saved in localStorage) ----------
-  let tasks = [];
+  let auth = null;
 
-  function load() {
-    try {
-      tasks = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch {
-      tasks = [];
-    }
+  function newId() {
+    return (window.crypto && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 
-  function save() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-    } catch {
-      /* storage unavailable; keep working in memory */
-    }
-  }
-
+  // ---------- Tasks (a collection inside the generic app state) ----------
   function render() {
+    const tasks = AppSync.list("tasks")
+      .slice()
+      .sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+
     list.replaceChildren();
     empty.hidden = tasks.length > 0;
 
@@ -38,12 +39,10 @@
 
       const check = document.createElement("input");
       check.type = "checkbox";
-      check.checked = task.done;
+      check.checked = !!task.done;
       check.setAttribute("aria-label", "Mark done");
       check.addEventListener("change", () => {
-        task.done = check.checked;
-        save();
-        render();
+        AppSync.upsert("tasks", task.id, { done: check.checked });
       });
 
       const text = document.createElement("span");
@@ -54,9 +53,7 @@
       del.type = "button";
       del.textContent = "Delete";
       del.addEventListener("click", () => {
-        tasks = tasks.filter((t) => t.id !== task.id);
-        save();
-        render();
+        AppSync.remove("tasks", task.id);
       });
 
       li.append(check, text, del);
@@ -68,10 +65,84 @@
     e.preventDefault();
     const value = input.value.trim();
     if (!value) return;
-    tasks.unshift({ id: Date.now(), text: value, done: false });
+    AppSync.upsert("tasks", newId(), { text: value, done: false, createdAt: Date.now() });
     input.value = "";
-    save();
-    render();
+  });
+
+  // Move tasks from the old localStorage-only version into the shared document.
+  function migrateLegacyTasks() {
+    try {
+      const raw = localStorage.getItem(LEGACY_KEY);
+      if (!raw) return;
+      const oldTasks = JSON.parse(raw);
+      if (!Array.isArray(oldTasks)) return;
+      oldTasks.forEach((task) => {
+        const id = String(task.id || newId());
+        if (!AppSync.get("tasks", id)) {
+          AppSync.upsert("tasks", id, {
+            text: String(task.text || ""),
+            done: !!task.done,
+            createdAt: Number(task.id) || Date.now()
+          });
+        }
+      });
+      localStorage.removeItem(LEGACY_KEY);
+    } catch (err) {
+      console.warn("Could not migrate existing tasks:", err);
+    }
+  }
+
+  // ---------- Drive UI ----------
+  AppSync.onChange(render);
+
+  AppSync.onStatus((info) => {
+    syncStateEl.textContent = info.message;
+    syncStateEl.className = `sync-state ${info.state}`;
+    syncDetailEl.textContent = info.connected ? `Drive file: ${info.fileName || info.fileId}` : "";
+    syncNowBtn.hidden = !info.connected;
+    shareForm.hidden = !info.connected;
+  });
+
+  AppAuth.onAuthChange((info) => {
+    auth = info;
+    const canUseDrive = !!(info.signedIn && info.profile && info.profile.sub);
+    openSharedBtn.hidden = !canUseDrive;
+    if (!canUseDrive) {
+      syncNowBtn.hidden = true;
+      shareForm.hidden = true;
+    }
+  });
+
+  syncNowBtn.addEventListener("click", async () => {
+    try {
+      await AppSync.syncNow();
+    } catch (err) {
+      shareNote.textContent = err.message;
+    }
+  });
+
+  openSharedBtn.addEventListener("click", async () => {
+    shareNote.textContent = "";
+    try {
+      const id = await AppSync.openPicker();
+      if (id) shareNote.textContent = "Opened the shared state file. Changes are now synced.";
+    } catch (err) {
+      shareNote.textContent = err.message;
+    }
+  });
+
+  shareForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = shareEmail.value.trim();
+    if (!email) return;
+    shareNote.textContent = "Inviting…";
+    try {
+      await AppSync.share(email, "writer");
+      shareEmail.value = "";
+      shareNote.textContent = `Invited ${email} as an editor.`;
+    } catch (err) {
+      shareNote.textContent = err.message;
+    }
   });
 
   // ---------- Online / offline indicator ----------
@@ -123,7 +194,6 @@
     swState.textContent = "Service workers not supported.";
   }
 
-  load();
-  render();
+  migrateLegacyTasks();
   updateStatus();
 })();

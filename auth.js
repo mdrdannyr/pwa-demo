@@ -1,11 +1,36 @@
 (() => {
   const PROFILE_KEY = "pwa-demo-profile";
+  const CONSENT_KEY = "pwa-demo-drive-consent";
+  const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
   const clientId = (window.APP_CONFIG && window.APP_CONFIG.googleClientId) || "";
   const configured = clientId !== "" && !clientId.startsWith("YOUR_");
   const authEl = document.getElementById("auth");
 
   let googleReady = false;
-  let loading = false;
+  let googlePromise = null;
+  let tokenClient = null;
+  let accessToken = "";
+  let tokenExpiresAt = 0;
+  let consentGranted = loadConsent();
+  let pendingToken = null;
+  const listeners = new Set();
+
+  function loadConsent() {
+    try {
+      return localStorage.getItem(CONSENT_KEY) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function saveConsent(granted) {
+    try {
+      if (granted) localStorage.setItem(CONSENT_KEY, "1");
+      else localStorage.removeItem(CONSENT_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
 
   // ---------- Saved profile (display name + picture only) ----------
   function loadProfile() {
@@ -35,10 +60,33 @@
 
   // Decode the payload of a Google ID token (a JWT).
   // This app has no backend, so the result is used for display only, never for access control.
+  // The `sub` claim is a stable account id, used only to key local Drive file references.
   function decodeJwt(token) {
     const b64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     return JSON.parse(new TextDecoder().decode(bytes)); // TextDecoder keeps non-Latin names intact
+  }
+
+  function state() {
+    const profile = loadProfile();
+    return {
+      configured,
+      googleReady,
+      signedIn: !!profile,
+      needsReauth: !!profile && !profile.sub,
+      profile
+    };
+  }
+
+  function notify() {
+    const snapshot = state();
+    listeners.forEach((fn) => {
+      try {
+        fn(snapshot);
+      } catch (err) {
+        console.error("Auth listener failed:", err);
+      }
+    });
   }
 
   // ---------- Rendering ----------
@@ -110,10 +158,12 @@
         throw new Error("Unexpected ID token");
       }
       saveProfile({
+        sub: claims.sub || "",
         name: claims.name || claims.given_name || claims.email || "Signed in",
         picture: claims.picture || ""
       });
       refresh();
+      notify();
     } catch (err) {
       console.error("Google sign-in failed:", err);
       showSignedOut();
@@ -122,7 +172,9 @@
   }
 
   function initGoogle() {
-    if (!window.google || !google.accounts || !google.accounts.id) return;
+    if (!window.google || !google.accounts || !google.accounts.id) {
+      throw new Error("Google sign-in library did not load");
+    }
     google.accounts.id.initialize({
       client_id: clientId,
       callback: onCredential,
@@ -130,39 +182,148 @@
     });
     googleReady = true;
     refresh();
+    notify();
   }
 
   // Loaded from JS (not a static tag) so it can be retried after the device comes back online.
   function loadGoogle() {
-    if (googleReady || loading || !configured || !navigator.onLine) return;
-    loading = true;
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.onload = () => {
-      loading = false;
-      initGoogle();
-    };
-    script.onerror = () => {
-      loading = false;
-      script.remove();
-      refresh();
-    };
-    document.head.append(script);
+    if (googleReady) return Promise.resolve();
+    if (googlePromise) return googlePromise;
+    if (!configured) return Promise.reject(new Error("Google sign-in is not configured"));
+    if (!navigator.onLine) return Promise.reject(new Error("Sign-in needs a connection"));
+
+    googlePromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.onload = () => {
+        try {
+          initGoogle();
+          resolve();
+        } catch (err) {
+          googlePromise = null;
+          reject(err);
+        }
+      };
+      script.onerror = () => {
+        script.remove();
+        googlePromise = null;
+        refresh();
+        reject(new Error("Could not load Google sign-in"));
+      };
+      document.head.append(script);
+    });
+    return googlePromise;
+  }
+
+  function requestToken(prompt) {
+    if (!tokenClient) throw new Error("Google token client is unavailable");
+    tokenClient.requestAccessToken({ prompt });
+  }
+
+  // Access tokens are short-lived and are requested only when Drive is actually used.
+  // After the first grant, an empty prompt renews silently; fall back to consent if needed.
+  async function getAccessToken() {
+    const profile = loadProfile();
+    if (!profile || !profile.sub) throw new Error("Sign in with Google to use Drive");
+    if (accessToken && Date.now() < tokenExpiresAt - 60000) return accessToken;
+
+    await loadGoogle();
+    if (!google.accounts.oauth2 || !google.accounts.oauth2.initTokenClient) {
+      throw new Error("Google token client is unavailable");
+    }
+
+    if (!tokenClient) {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: DRIVE_SCOPE,
+        callback: (response) => {
+          if (response && response.access_token) {
+            accessToken = response.access_token;
+            tokenExpiresAt = Date.now() + (Number(response.expires_in) || 3600) * 1000;
+            consentGranted = true;
+            saveConsent(true);
+            // Do not notify auth listeners here: a token refresh is not a sign-in change.
+            if (pendingToken) {
+              const pending = pendingToken;
+              pendingToken = null;
+              pending.resolve(accessToken);
+            }
+          } else {
+            const pending = pendingToken;
+            if (pending && !pending.retried && consentGranted) {
+              pending.retried = true;
+              requestToken("consent");
+              return;
+            }
+            const err = new Error(
+              (response && (response.error_description || response.error)) || "Google did not return an access token"
+            );
+            if (pending) {
+              pendingToken = null;
+              pending.reject(err);
+            }
+          }
+        },
+        error_callback: (err) => {
+          if (pendingToken) {
+            const pending = pendingToken;
+            pendingToken = null;
+            pending.reject(new Error((err && err.type) || "Google permission request failed"));
+          }
+        }
+      });
+    }
+
+    return new Promise((resolve, reject) => {
+      if (pendingToken) {
+        reject(new Error("A Google permission request is already in progress"));
+        return;
+      }
+      pendingToken = { resolve, reject, retried: false };
+      try {
+        requestToken(consentGranted ? "" : "consent");
+      } catch (err) {
+        pendingToken = null;
+        reject(err);
+      }
+    });
   }
 
   function signOut() {
-    if (googleReady) google.accounts.id.disableAutoSelect();
+    if (googleReady) {
+      google.accounts.id.disableAutoSelect();
+      if (accessToken && google.accounts.oauth2 && google.accounts.oauth2.revoke) {
+        google.accounts.oauth2.revoke(accessToken, () => {});
+      }
+    }
+    accessToken = "";
+    tokenExpiresAt = 0;
+    consentGranted = false;
+    saveConsent(false);
+    tokenClient = null;
     clearProfile();
     refresh();
+    notify();
   }
 
   window.addEventListener("online", () => {
-    loadGoogle();
+    loadGoogle().catch(() => {});
     refresh();
   });
   window.addEventListener("offline", refresh);
 
+  window.AppAuth = {
+    onAuthChange(fn) {
+      listeners.add(fn);
+      fn(state());
+      return () => listeners.delete(fn);
+    },
+    getState: state,
+    getAccessToken,
+    signOut
+  };
+
   refresh();
-  loadGoogle();
+  loadGoogle().catch(() => {});
 })();
