@@ -7,6 +7,10 @@
   --accent-text: #ffffff;
   --border: #e2e2ee;
   --off: #dc2626;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -31,7 +35,7 @@ body {
   font-size: clamp(15px, 0.9rem + 0.2vw, 17px);
   background: var(--bg);
   color: var(--text);
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  padding: 0 var(--safe-right) 0 var(--safe-left);
 }
 
 /* ---------- Layout ---------- */
@@ -388,7 +392,7 @@ body.logged-out header { text-align: center; }
 @media (max-width: 720px) {
   .app-layout {
     display: block;
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(4.5rem + var(--safe-bottom));
   }
   body.logged-out .app-layout { padding-bottom: 0; }
 
@@ -402,7 +406,7 @@ body.logged-out header { text-align: center; }
     height: auto;
     flex-direction: column;
     gap: 0;
-    padding: 0 0 env(safe-area-inset-bottom);
+    padding: 0 0 var(--safe-bottom);
     background: var(--surface);
     color: var(--text);
     border-top: 1px solid var(--border);
@@ -452,7 +456,7 @@ body.logged-out header { text-align: center; }
     display: flex;
     align-items: center;
     min-height: 3.75rem;
-    padding: 0.5rem clamp(0.75rem, 3.5vw, 1.25rem);
+    padding: calc(0.5rem + var(--safe-top)) clamp(0.75rem, 3.5vw, 1.25rem) 0.5rem;
   }
   body:not(.logged-out) header h1 { display: none; }
 
