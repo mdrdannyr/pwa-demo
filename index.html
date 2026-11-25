@@ -54,20 +54,32 @@
           </article>
 
           <article class="setup-card">
-            <h2>Sharing with others</h2>
-            <p class="setup-intro">The state file stays in your Drive. You can invite people as editors, and their changes merge with yours.</p>
+            <h2>Share your file with others</h2>
+            <p class="setup-intro">Your state file stays in your Google Drive. Invite people as editors and their changes will merge with yours.</p>
             <ol class="setup-steps">
-              <li>Invite a collaborator by email below. Google sends them a notification with access to <strong>PWA Demo state.json</strong>.</li>
-              <li>They open this app, come to this Setup page, and click <strong>Open shared file</strong>. Google's narrow Drive permission requires this one-time step.</li>
-              <li>In the picker they choose <strong>Shared with me</strong> and select that JSON file. After that, edits sync automatically; the app checks for updates every 60 seconds.</li>
+              <li>Enter a collaborator's Google email below and click <strong>Share</strong>.</li>
+              <li>They receive a Google Drive notification with editor access to <strong>PWA Demo state.json</strong>.</li>
+              <li>They open this app, go to Setup → <strong>Open a file shared with you</strong>, and select the file once. After that, edits sync automatically.</li>
             </ol>
-            <p class="setup-note">You can also manage or revoke access at any time in Google Drive.</p>
+            <p class="setup-note">You can manage or revoke access at any time in Google Drive.</p>
             <form id="share-form" class="share-form" hidden>
               <input id="share-email" type="email" placeholder="Collaborator's email" aria-label="Collaborator email" required>
               <button type="submit">Share</button>
             </form>
+            <p id="invite-note" class="share-note" role="status"></p>
+          </article>
+
+          <article class="setup-card">
+            <h2>Open a file shared with you</h2>
+            <p class="setup-intro">If someone has shared their PWA Demo state file with you, load it here to collaborate on the same document.</p>
+            <ol class="setup-steps">
+              <li>Click <strong>Open shared file</strong> below.</li>
+              <li>In the Google picker, choose <strong>Shared with me</strong> and select <strong>PWA Demo state.json</strong>.</li>
+              <li>Google's narrow Drive permission requires this one-time step. Your local state will be merged into the shared file.</li>
+            </ol>
+            <p class="setup-note">The app checks for changes every 60 seconds while it is open.</p>
             <button id="open-shared" class="secondary" type="button" hidden>Open shared file</button>
-            <p id="share-note" class="share-note" role="status"></p>
+            <p id="open-note" class="share-note" role="status"></p>
           </article>
         </section>
       </main>

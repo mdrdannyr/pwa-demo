@@ -14,7 +14,8 @@
   const openSharedBtn = document.getElementById("open-shared");
   const shareForm = document.getElementById("share-form");
   const shareEmail = document.getElementById("share-email");
-  const shareNote = document.getElementById("share-note");
+  const inviteNote = document.getElementById("invite-note");
+  const openNote = document.getElementById("open-note");
   const pageTitle = document.getElementById("page-title");
   const navButtons = document.querySelectorAll(".nav-item");
   const pages = {
@@ -142,21 +143,22 @@
   });
 
   connectBtn.addEventListener("click", async () => {
-    shareNote.textContent = "";
+    inviteNote.textContent = "";
+    openNote.textContent = "";
     try {
       await AppSync.connect();
     } catch (err) {
-      shareNote.textContent = err.message;
+      inviteNote.textContent = err.message;
     }
   });
 
   openSharedBtn.addEventListener("click", async () => {
-    shareNote.textContent = "";
+    openNote.textContent = "";
     try {
       const id = await AppSync.openPicker();
-      if (id) shareNote.textContent = "Opened the shared state file. Changes are now synced.";
+      if (id) openNote.textContent = "Opened the shared state file. Changes are now synced.";
     } catch (err) {
-      shareNote.textContent = err.message;
+      openNote.textContent = err.message;
     }
   });
 
@@ -164,13 +166,13 @@
     e.preventDefault();
     const email = shareEmail.value.trim();
     if (!email) return;
-    shareNote.textContent = "Inviting…";
+    inviteNote.textContent = "Inviting…";
     try {
       await AppSync.share(email, "writer");
       shareEmail.value = "";
-      shareNote.textContent = `Invited ${email} as an editor.`;
+      inviteNote.textContent = `Invited ${email} as an editor.`;
     } catch (err) {
-      shareNote.textContent = err.message;
+      inviteNote.textContent = err.message;
     }
   });
 
