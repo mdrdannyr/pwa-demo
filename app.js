@@ -6,10 +6,13 @@
   const list = document.getElementById("task-list");
   const empty = document.getElementById("empty");
   const statusEl = document.getElementById("status");
+  const sidebarUser = document.getElementById("sidebar-user");
+  const sidebarAvatar = document.getElementById("sidebar-avatar");
+  const sidebarName = document.getElementById("sidebar-name");
   const swState = document.getElementById("sw-state");
-  const installBtn = document.getElementById("install-btn");
   const syncStateEl = document.getElementById("sync-state");
   const syncDetailEl = document.getElementById("sync-detail");
+  const lastSyncEl = document.getElementById("last-sync");
   const connectBtn = document.getElementById("connect-drive");
   const openSharedBtn = document.getElementById("open-shared");
   const shareForm = document.getElementById("share-form");
@@ -20,14 +23,16 @@
   const navButtons = document.querySelectorAll(".nav-item");
   const pages = {
     tasks: document.getElementById("page-tasks"),
-    setup: document.getElementById("page-setup")
+    settings: document.getElementById("page-settings")
   };
 
   let auth = null;
+  let lastSyncValue = null;
 
   // ---------- Pages ----------
   function showPage(name) {
-    const page = pages[name] ? name : "tasks";
+    const requested = name === "setup" ? "settings" : name; // old #setup links still work
+    const page = pages[requested] ? requested : "tasks";
     Object.entries(pages).forEach(([key, el]) => {
       el.hidden = key !== page;
     });
@@ -37,8 +42,8 @@
       if (active) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");
     });
-    pageTitle.textContent = page === "setup" ? "Setup" : "Tasks";
-    document.title = page === "setup" ? "Setup · PWA Demo" : "PWA Demo";
+    pageTitle.textContent = page === "settings" ? "Settings" : "Tasks";
+    document.title = page === "settings" ? "Settings · PWA Demo" : "PWA Demo";
     if (location.hash !== `#${page}`) history.replaceState(null, "", `#${page}`);
   }
 
@@ -121,20 +126,55 @@
     }
   }
 
+  // ---------- Last sync display ----------
+  function formatLastSync(timestamp) {
+    const date = new Date(timestamp);
+    const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+    if (seconds < 60) return "just now";
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+    const sameDay = date.toDateString() === new Date().toDateString();
+    if (sameDay && seconds < 86400) return `${Math.floor(seconds / 3600)} hr ago`;
+    return date.toLocaleString();
+  }
+
+  function renderLastSync(timestamp) {
+    lastSyncEl.hidden = !timestamp;
+    if (!timestamp) return;
+    const label = formatLastSync(timestamp);
+    lastSyncEl.textContent = `Last synced: ${label}`;
+    lastSyncEl.title = new Date(timestamp).toLocaleString();
+  }
+
+  setInterval(() => renderLastSync(lastSyncValue), 60000);
+
   // ---------- Drive UI ----------
   AppSync.onChange(render);
 
   AppSync.onStatus((info) => {
     syncStateEl.textContent = info.message;
     syncStateEl.className = `sync-state ${info.state}`;
-    syncDetailEl.textContent = info.connected ? `Drive file: ${info.fileName || info.fileId}` : "";
+    syncDetailEl.textContent = info.connected ? `Drive file: ${info.filePath || info.fileName || info.fileId}` : "";
+    lastSyncValue = info.lastSyncAt || null;
+    renderLastSync(lastSyncValue);
     connectBtn.hidden = !info.needsConnect;
     shareForm.hidden = !info.connected;
   });
 
   AppAuth.onAuthChange((info) => {
     auth = info;
-    const canUseDrive = !!(info.signedIn && info.profile && info.profile.sub);
+    const profile = info.signedIn && info.profile && info.profile.sub ? info.profile : null;
+    const canUseDrive = !!profile;
+    sidebarUser.hidden = !profile;
+    if (profile) {
+      sidebarName.textContent = profile.name || "Signed in";
+      if (profile.picture) {
+        sidebarAvatar.src = profile.picture;
+        sidebarAvatar.hidden = false;
+      } else {
+        sidebarAvatar.removeAttribute("src");
+        sidebarAvatar.hidden = true;
+      }
+    }
     openSharedBtn.hidden = !canUseDrive;
     if (!canUseDrive) {
       connectBtn.hidden = true;
@@ -156,7 +196,7 @@
     openNote.textContent = "";
     try {
       const id = await AppSync.openPicker();
-      if (id) openNote.textContent = "Opened the shared state file. Changes are now synced.";
+      if (id) openNote.textContent = "Opened the shared data file. Changes are now synced.";
     } catch (err) {
       openNote.textContent = err.message;
     }
@@ -185,27 +225,6 @@
   }
   window.addEventListener("online", updateStatus);
   window.addEventListener("offline", updateStatus);
-
-  // ---------- Install prompt ----------
-  let deferredPrompt = null;
-
-  window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installBtn.hidden = false;
-  });
-
-  installBtn.addEventListener("click", async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    installBtn.hidden = true;
-  });
-
-  window.addEventListener("appinstalled", () => {
-    installBtn.hidden = true;
-  });
 
   // ---------- Service worker ----------
   if ("serviceWorker" in navigator) {

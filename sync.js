@@ -24,7 +24,7 @@
  *
  * Public API (window.AppSync):
  *   onChange(fn)             -> fn({ values, collections }) now and on every local/remote change
- *   onStatus(fn)             -> fn({ state, message, connected, fileId }) now and on status changes
+ *   onStatus(fn)             -> fn({ state, message, connected, fileId, filePath, lastSyncAt }) now and on status changes
  *   state()                  -> current plain state
  *   list(collection)         -> plain records (non-deleted), each with an `id`
  *   get(collection, id)      -> plain record or null
@@ -32,7 +32,7 @@
  *   remove(collection, id)
  *   set(key, value)          -> top-level value register
  *   syncNow()                -> pull + push immediately
- *   openPicker()             -> choose an existing (shared) state file in Drive
+ *   openPicker()             -> choose an existing (shared) data file in Drive
  *   share(email, role)       -> invite a collaborator; role: reader|commenter|writer
  *   status()
  */
@@ -43,10 +43,15 @@
   const ACTOR_KEY = "pwa-demo-sync-actor";
   const FILE_KEY = "pwa-demo-drive-file:";
   const ETAG_KEY = "pwa-demo-drive-etag:";
+  const OWNED_KEY = "pwa-demo-drive-owned:";
+  const SHARED_KEY = "pwa-demo-drive-shared:";
+  const LAST_SYNC_KEY = "pwa-demo-drive-last-sync:";
   const DRIVE_API = "https://www.googleapis.com/drive/v3";
   const UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
   const POLL_MS = 60000;
-  const fileName = config.driveFileName || "PWA Demo state.json";
+  const folderName = config.driveFolderName || "PWA Demo";
+  const fileName = config.driveFileName || "data.json";
+  const drivePath = `${folderName}/${fileName}`;
   const apiKey = config.googleDriveApiKey || "";
   const appId = (config.googleClientId || "").split("-")[0] || "";
 
@@ -64,6 +69,8 @@
   let syncState = "local";
   let message = "Local only — sign in to back up in Drive.";
   let needsConnect = false;
+  let folderId = null;
+  let lastSyncAt = null;
 
   const stateListeners = new Set();
   const statusListeners = new Set();
@@ -137,7 +144,7 @@
       throw new Error("The Drive file does not contain valid JSON");
     }
     if (!raw || raw.format !== FORMAT) {
-      throw new Error("That file is not a PWA Demo app-state file");
+      throw new Error("That file is not a PWA Demo data file");
     }
     return normalizeDoc(raw);
   }
@@ -260,7 +267,9 @@
       connected: !!fileId,
       needsConnect,
       fileId,
-      fileName: fileId ? fileName : ""
+      fileName: fileId ? fileName : "",
+      filePath: fileId ? drivePath : "",
+      lastSyncAt
     };
   }
 
@@ -309,6 +318,54 @@
     }
   }
 
+  function escapeQuery(value) {
+    return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  }
+
+  function rememberOwned(id) {
+    try {
+      localStorage.setItem(OWNED_KEY + profile.sub, id);
+      localStorage.removeItem(SHARED_KEY + profile.sub);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function rememberShared(id) {
+    try {
+      localStorage.setItem(SHARED_KEY + profile.sub, id);
+      localStorage.removeItem(OWNED_KEY + profile.sub);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function isSharedFile(id) {
+    try {
+      return localStorage.getItem(SHARED_KEY + profile.sub) === id;
+    } catch {
+      return false;
+    }
+  }
+
+  function loadLastSync() {
+    try {
+      const value = Number(localStorage.getItem(LAST_SYNC_KEY + (profile ? profile.sub : "")));
+      return Number.isFinite(value) && value > 0 ? value : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function markSynced() {
+    lastSyncAt = Date.now();
+    try {
+      localStorage.setItem(LAST_SYNC_KEY + (profile ? profile.sub : ""), String(lastSyncAt));
+    } catch {
+      /* ignore */
+    }
+  }
+
   async function api(path, options = {}, tokenOptions = { silentOnly: true }) {
     const token = await window.AppAuth.getAccessToken(tokenOptions);
     return fetch(`${DRIVE_API}${path}`, {
@@ -332,15 +389,78 @@
     throw err;
   }
 
+  async function ensureFolder() {
+    if (folderId) return folderId;
+    const q = encodeURIComponent(
+      `mimeType = 'application/vnd.google-apps.folder' and name = '${escapeQuery(folderName)}' and trashed = false`
+    );
+    const res = await api(`/files?q=${q}&spaces=drive&fields=files(id,name)&pageSize=20`);
+    await check(res, "Searching Drive folder");
+    const files = (await res.json()).files || [];
+    if (files.length) {
+      folderId = files[0].id;
+      return folderId;
+    }
+
+    const token = await window.AppAuth.getAccessToken({ silentOnly: true });
+    const created = await fetch(`${DRIVE_API}/files?fields=id,name`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: folderName,
+        mimeType: "application/vnd.google-apps.folder",
+        parents: ["root"]
+      })
+    });
+    await check(created, "Creating Drive folder");
+    folderId = (await created.json()).id;
+    return folderId;
+  }
+
+  // Existing installs used a single top-level "PWA Demo state.json". Move that
+  // same file into the new folder and rename it so its id and sharing survive.
+  async function normalizeFileLocation() {
+    if (!fileId || isSharedFile(fileId)) return;
+    const res = await api(`/files/${encodeURIComponent(fileId)}?fields=id,name,parents,ownedByMe`);
+    if (!res.ok) return; // the following fetch/sync will report the real error
+    const meta = await res.json();
+    if (meta.ownedByMe === false) {
+      rememberShared(fileId);
+      return;
+    }
+
+    const parentId = await ensureFolder();
+    const parents = Array.isArray(meta.parents) ? meta.parents : [];
+    const needsMove = !parents.includes(parentId);
+    const needsRename = meta.name !== fileName;
+    if (!needsMove && !needsRename) return;
+
+    const params = new URLSearchParams();
+    if (needsMove) {
+      params.set("addParents", parentId);
+      if (parents.length) params.set("removeParents", parents.join(","));
+    }
+    params.set("fields", "id,name,parents");
+    const update = await api(`/files/${encodeURIComponent(fileId)}?${params.toString()}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: fileName })
+    });
+    await check(update, "Moving Drive data file");
+  }
+
   async function findOrCreateFile() {
-    const escapedName = fileName.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-    const q = encodeURIComponent(`name = '${escapedName}' and trashed = false`);
+    const parentId = await ensureFolder();
+    const q = encodeURIComponent(
+      `name = '${escapeQuery(fileName)}' and '${escapeQuery(parentId)}' in parents and trashed = false`
+    );
     const res = await api(`/files?q=${q}&spaces=drive&fields=files(id,name,modifiedTime)&pageSize=20`);
     await check(res, "Searching Drive");
     const json = await res.json();
     const files = json.files || [];
     if (files.length) {
       files.sort((a, b) => new Date(b.modifiedTime || 0) - new Date(a.modifiedTime || 0));
+      rememberOwned(files[0].id);
       return files[0].id;
     }
 
@@ -349,7 +469,7 @@
     const metadata = {
       name: fileName,
       mimeType: "application/json",
-      parents: ["root"],
+      parents: [parentId],
       description: "Generic app-state document (app-state-v1) for this PWA"
     };
     const body = [
@@ -376,6 +496,7 @@
     await check(created, "Creating Drive file");
     const jsonCreated = await created.json();
     rememberEtag(created.headers.get("ETag"), jsonCreated.id);
+    rememberOwned(jsonCreated.id);
     return jsonCreated.id;
   }
 
@@ -449,7 +570,8 @@
         if (remote) applyRemote(remote);
       }
       if (dirty || mode === "push") await upload();
-      setStatus("synced", `Synced to your Google Drive · ${fileName}`);
+      markSynced();
+      setStatus("synced", `Synced to your Google Drive · ${drivePath}`);
     } catch (err) {
       if (err.status === 404) {
         fileId = null;
@@ -504,7 +626,9 @@
 
   // ---------- Auth lifecycle ----------
   async function finishConnect(generation) {
-    if (!fileId) {
+    if (fileId) {
+      await normalizeFileLocation();
+    } else {
       fileId = await findOrCreateFile();
       try {
         localStorage.setItem(FILE_KEY + profile.sub, fileId);
@@ -520,7 +644,8 @@
 
     await upload();
     if (generation !== authGeneration) return;
-    setStatus("synced", `Synced to your Google Drive · ${fileName}`);
+    markSynced();
+    setStatus("synced", `Synced to your Google Drive · ${drivePath}`);
     startPoll();
   }
 
@@ -536,12 +661,15 @@
   function handleAuth(auth) {
     const next = auth.signedIn && auth.profile && auth.profile.sub ? auth.profile : null;
     profile = next;
+    folderId = null;
+    lastSyncAt = loadLastSync();
     stopPoll();
     dirty = true;
 
     if (!profile) {
       fileId = null;
       etag = null;
+      lastSyncAt = null;
       setStatus("local", auth.signedIn ? "Sign in again to enable Drive sync." : "Local only — sign in & connect Drive to back up.");
       return;
     }
@@ -607,7 +735,7 @@
         .setOAuthToken(token)
         .addView(myDrive)
         .addView(shared)
-        .setTitle("Choose a shared PWA Demo state file")
+        .setTitle("Choose a shared PWA Demo data file")
         .setCallback(async (data) => {
           if (data.action === google.picker.Action.CANCEL) {
             resolve(null);
@@ -625,8 +753,10 @@
             } catch {
               /* ignore */
             }
+            rememberShared(id);
             setStatus("syncing", "Merging with the shared file…");
             await upload();
+            markSynced();
             setStatus("synced", `Synced to the shared file · ${fileName}`);
             startPoll();
             resolve(id);

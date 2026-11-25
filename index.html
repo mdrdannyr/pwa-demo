@@ -17,11 +17,14 @@
       <div class="brand">PWA Demo</div>
       <nav class="nav" aria-label="Pages">
         <button class="nav-item active" type="button" data-page="tasks" aria-current="page">Tasks</button>
-        <button class="nav-item" type="button" data-page="setup">Setup</button>
+        <button class="nav-item" type="button" data-page="settings">Settings</button>
       </nav>
       <div class="sidebar-bottom">
         <span id="status" class="status" role="status">Checking…</span>
-        <button id="install-btn" class="install" hidden>Install app</button>
+        <div id="sidebar-user" class="sidebar-user" hidden>
+          <img id="sidebar-avatar" class="avatar" alt="" referrerpolicy="no-referrer">
+          <span id="sidebar-name" class="sidebar-name"></span>
+        </div>
       </div>
     </aside>
 
@@ -41,25 +44,26 @@
           <p id="empty" class="empty" hidden>No tasks yet. Add one above. It works offline too.</p>
         </section>
 
-        <section id="page-setup" class="page" hidden>
+        <section id="page-settings" class="page" hidden>
           <article class="setup-card">
             <h2>Account &amp; Drive</h2>
-            <p class="setup-intro">Sign in once to back up your state in your own Google Drive. This also grants the app access to that one state file — nothing else in your Drive.</p>
+            <p class="setup-intro">Sign in once to back up your state in your own Google Drive. This also grants the app access to that one data file — nothing else in your Drive.</p>
             <div id="auth" class="auth"></div>
             <div class="sync-row">
               <span id="sync-state" class="sync-state" role="status">Local only</span>
               <button id="connect-drive" class="secondary" type="button" hidden>Connect Drive</button>
             </div>
             <p id="sync-detail" class="sync-detail"></p>
+            <p id="last-sync" class="sync-detail" hidden>Last synced: —</p>
           </article>
 
           <article class="setup-card">
             <h2>Share your file with others</h2>
-            <p class="setup-intro">Your state file stays in your Google Drive. Invite people as editors and their changes will merge with yours.</p>
+            <p class="setup-intro">Your data file stays in your Google Drive. Invite people as editors and their changes will merge with yours.</p>
             <ol class="setup-steps">
               <li>Enter a collaborator's Google email below and click <strong>Share</strong>.</li>
-              <li>They receive a Google Drive notification with editor access to <strong>PWA Demo state.json</strong>.</li>
-              <li>They open this app, go to Setup → <strong>Open a file shared with you</strong>, and select the file once. After that, edits sync automatically.</li>
+              <li>They receive a Google Drive notification with editor access to <strong>data.json</strong> in the <strong>PWA Demo</strong> folder.</li>
+              <li>They open this app, go to Settings → <strong>Open a file shared with you</strong>, and select the file once. After that, edits sync automatically.</li>
             </ol>
             <p class="setup-note">You can manage or revoke access at any time in Google Drive.</p>
             <form id="share-form" class="share-form" hidden>
@@ -71,10 +75,10 @@
 
           <article class="setup-card">
             <h2>Open a file shared with you</h2>
-            <p class="setup-intro">If someone has shared their PWA Demo state file with you, load it here to collaborate on the same document.</p>
+            <p class="setup-intro">If someone has shared their PWA Demo data file with you, load it here to collaborate on the same document.</p>
             <ol class="setup-steps">
               <li>Click <strong>Open shared file</strong> below.</li>
-              <li>In the Google picker, choose <strong>Shared with me</strong> and select <strong>PWA Demo state.json</strong>.</li>
+              <li>In the Google picker, choose <strong>Shared with me</strong> and select <strong>data.json</strong>.</li>
               <li>Google's narrow Drive permission requires this one-time step. Your local state will be merged into the shared file.</li>
             </ol>
             <p class="setup-note">The app checks for changes every 60 seconds while it is open.</p>

@@ -231,6 +231,7 @@
   async function getAccessToken(options = {}) {
     const silentOnly = options.silentOnly === true;
     if (accessToken && Date.now() < tokenExpiresAt - 60000) return accessToken;
+    if (silentOnly && !consentGranted) throw new Error("Drive permission has not been granted");
 
     if (!googleReady) {
       if (silentOnly) throw new Error("Google sign-in is not ready");

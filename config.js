@@ -9,10 +9,11 @@
 //   4. Paste the client ID below.
 //   5. Enable the Google Drive API for the project.
 //   6. Create an API key (APIs & Services -> Credentials) and paste it below.
-//      The API key is required by the Google Picker so collaborators can open a shared state file.
+//      The API key is required by the Google Picker so collaborators can open a shared data file.
 //      Restrict it to your HTTP referrers and to the Google Picker API.
 window.APP_CONFIG = {
   googleClientId: "1018863696965-np77av63b1l6hdfk63t2h0lkmnnelte9.apps.googleusercontent.com",
   googleDriveApiKey: "AIzaSyBav-jQflfQ8mHj0uJQbRywUebqvQpGIn8",
-  driveFileName: "PWA Demo state.json"
+  driveFolderName: "PWA Demo",
+  driveFileName: "data.json"
 };

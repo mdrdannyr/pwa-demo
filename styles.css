@@ -80,6 +80,28 @@ body {
   gap: 0.75rem;
 }
 
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  min-width: 0;
+}
+
+.sidebar-user .avatar {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.sidebar-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .app-main {
   flex: 1;
   min-width: 0;
@@ -137,13 +159,6 @@ button.secondary {
   border: 1px solid var(--accent);
 }
 
-.install {
-  background: #ffffff;
-  color: var(--accent);
-  font-size: 0.85rem;
-  padding: 0.45rem 0.8rem;
-}
-
 /* ---------- Tasks ---------- */
 #task-form { display: flex; gap: 0.5rem; }
 
@@ -184,7 +199,7 @@ input[type="text"]:focus, input[type="email"]:focus { outline: 2px solid var(--a
 
 .empty { text-align: center; color: var(--muted); margin-top: 2rem; }
 
-/* ---------- Setup page ---------- */
+/* ---------- Settings page ---------- */
 .setup-card {
   margin-bottom: 1rem;
   padding: 1.25rem;
@@ -286,7 +301,6 @@ input[type="text"]:focus, input[type="email"]:focus { outline: 2px solid var(--a
   }
   .nav { display: flex; margin: 0 0 0 auto; }
   .sidebar-bottom { margin: 0; display: flex; align-items: center; gap: 0.5rem; }
-  .install { margin: 0; }
   header { padding: 0.75rem 1rem; }
   main { padding: 1rem; }
 }
