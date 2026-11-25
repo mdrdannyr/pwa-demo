@@ -175,6 +175,28 @@ footer { text-align: center; padding: 1rem; color: var(--muted); font-size: 0.85
 .status.online::before { color: #86efac; }
 .status.offline::before { color: #fca5a5; }
 
+.mobile-topbar { display: none; }
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  border-radius: 50%;
+}
+
+.icon-button svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 button {
   padding: 0.7rem 1.1rem;
   font-size: 1rem;
@@ -366,7 +388,7 @@ body.logged-out header { text-align: center; }
 @media (max-width: 720px) {
   .app-layout {
     display: block;
-    padding-bottom: calc(6.75rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
   }
   body.logged-out .app-layout { padding-bottom: 0; }
 
@@ -389,33 +411,7 @@ body.logged-out header { text-align: center; }
   }
   .brand { display: none; }
 
-  .sidebar-bottom {
-    order: -1;
-    width: 100%;
-    margin: 0;
-    padding: 0.45rem 0.8rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    border-bottom: 1px solid var(--border);
-    min-width: 0;
-  }
-  .status {
-    font-size: 0.68rem;
-    padding: 0.15rem 0.4rem;
-    background: var(--bg);
-    color: var(--muted);
-  }
-  .sidebar-user {
-    max-width: 100%;
-    min-width: 0;
-    margin-left: auto;
-    padding: 0;
-    border: 0;
-  }
-  .sidebar-user .avatar { width: 28px; height: 28px; background: var(--accent); }
-  .sidebar-name { font-size: 0.75rem; color: var(--text); max-width: 120px; }
-  .sidebar-drive { font-size: 0.62rem; color: var(--muted); max-width: 150px; }
+  .sidebar-bottom { display: none; }
 
   .nav {
     display: flex;
@@ -424,6 +420,7 @@ body.logged-out header { text-align: center; }
     gap: 0;
     margin: 0;
   }
+  .nav-item[data-page="settings"] { display: none; }
   .nav-item {
     flex: 1 1 0;
     min-width: 0;
@@ -452,8 +449,42 @@ body.logged-out header { text-align: center; }
     position: sticky;
     top: 0;
     z-index: 10;
-    padding: 0.75rem clamp(1rem, 4vw, 1.25rem);
+    display: flex;
+    align-items: center;
+    min-height: 3.75rem;
+    padding: 0.5rem clamp(0.75rem, 3.5vw, 1.25rem);
   }
+  body:not(.logged-out) header h1 { display: none; }
+
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    min-width: 0;
+  }
+  body.logged-out .mobile-topbar { display: none; }
+
+  .mobile-user {
+    margin: 0;
+    max-width: 62%;
+    min-width: 0;
+  }
+  .mobile-user .avatar { width: 30px; height: 30px; background: var(--accent); }
+  .mobile-user .sidebar-name { font-size: 0.8rem; max-width: 110px; color: var(--text); }
+  .mobile-user .sidebar-drive { font-size: 0.62rem; max-width: 150px; color: var(--muted); }
+
+  .mobile-status {
+    margin-left: auto;
+    font-size: 0.68rem;
+    padding: 0.2rem 0.45rem;
+    background: var(--bg);
+    color: var(--muted);
+  }
+
+  .icon-button { width: 38px; height: 38px; color: var(--muted); }
+  .icon-button.active { color: var(--accent); background: var(--bg); }
+
   main { padding: clamp(0.85rem, 4vw, 1.25rem); }
   footer { padding-bottom: 1.25rem; }
 
@@ -473,5 +504,7 @@ body.logged-out header { text-align: center; }
 }
 
 @media (max-width: 360px) {
-  .status { display: none; }
+  .mobile-topbar { gap: 0.4rem; }
+  .mobile-user .sidebar-name { max-width: 90px; }
+  .mobile-user .sidebar-drive { max-width: 130px; }
 }

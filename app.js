@@ -10,6 +10,12 @@
   const sidebarAvatar = document.getElementById("sidebar-avatar");
   const sidebarName = document.getElementById("sidebar-name");
   const sidebarDrive = document.getElementById("sidebar-drive");
+  const mobileUser = document.getElementById("mobile-user");
+  const mobileAvatar = document.getElementById("mobile-avatar");
+  const mobileName = document.getElementById("mobile-name");
+  const mobileDrive = document.getElementById("mobile-drive");
+  const mobileStatus = document.getElementById("mobile-status");
+  const mobileSettingsBtn = document.getElementById("mobile-settings");
   const swState = document.getElementById("sw-state");
   const syncStateEl = document.getElementById("sync-state");
   const syncDetailEl = document.getElementById("sync-detail");
@@ -52,6 +58,7 @@
       if (active) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");
     });
+    mobileSettingsBtn.classList.toggle("active", page === "settings");
     pageTitle.textContent = page === "login" ? "Sign in" : (page === "settings" ? "Settings" : "Tasks");
     document.title = page === "login" ? "Sign in · PWA Demo" : (page === "settings" ? "Settings · PWA Demo" : "PWA Demo");
     document.body.classList.toggle("logged-out", !signedIn);
@@ -61,6 +68,7 @@
   navButtons.forEach((button) => {
     button.addEventListener("click", () => showPage(button.dataset.page));
   });
+  mobileSettingsBtn.addEventListener("click", () => showPage("settings"));
   window.addEventListener("hashchange", () => showPage(location.hash.slice(1)));
 
   function newId() {
@@ -161,30 +169,38 @@
     syncStateEl.textContent = info.message;
     syncStateEl.className = `sync-state ${info.state}`;
     syncDetailEl.textContent = info.fileLabel || "";
+    const driveText = info.source === "shared" ? "Syncing to: Shared file" : (info.source === "own" ? "Syncing to: My Drive" : "");
     sidebarDrive.hidden = !info.source;
-    sidebarDrive.textContent = info.source === "shared" ? "Syncing to: Shared file" : (info.source === "own" ? "Syncing to: My Drive" : "");
+    sidebarDrive.textContent = driveText;
     sidebarDrive.title = info.fileLabel || "";
+    mobileDrive.hidden = !info.source;
+    mobileDrive.textContent = driveText;
+    mobileDrive.title = info.fileLabel || "";
     lastSyncValue = info.lastSyncAt || null;
     renderLastSync(lastSyncValue);
     connectBtn.hidden = !info.needsConnect;
     shareForm.hidden = !info.connected;
   });
 
+  function renderProfile(profile, userEl, avatarEl, nameEl) {
+    userEl.hidden = !profile;
+    if (!profile) return;
+    nameEl.textContent = profile.name || "Signed in";
+    if (profile.picture) {
+      avatarEl.src = profile.picture;
+      avatarEl.hidden = false;
+    } else {
+      avatarEl.removeAttribute("src");
+      avatarEl.hidden = true;
+    }
+  }
+
   AppAuth.onAuthChange((info) => {
     auth = info;
     const profile = info.signedIn && info.profile && info.profile.sub ? info.profile : null;
     const canUseDrive = !!profile;
-    sidebarUser.hidden = !profile;
-    if (profile) {
-      sidebarName.textContent = profile.name || "Signed in";
-      if (profile.picture) {
-        sidebarAvatar.src = profile.picture;
-        sidebarAvatar.hidden = false;
-      } else {
-        sidebarAvatar.removeAttribute("src");
-        sidebarAvatar.hidden = true;
-      }
-    }
+    renderProfile(profile, sidebarUser, sidebarAvatar, sidebarName);
+    renderProfile(profile, mobileUser, mobileAvatar, mobileName);
     openSharedBtn.hidden = !canUseDrive;
     if (!canUseDrive) {
       connectBtn.hidden = true;
@@ -232,9 +248,11 @@
   // ---------- Online / offline indicator ----------
   function updateStatus() {
     const online = navigator.onLine;
-    statusEl.textContent = online ? "Online" : "Offline";
-    statusEl.classList.toggle("online", online);
-    statusEl.classList.toggle("offline", !online);
+    [statusEl, mobileStatus].forEach((el) => {
+      el.textContent = online ? "Online" : "Offline";
+      el.classList.toggle("online", online);
+      el.classList.toggle("offline", !online);
+    });
   }
   window.addEventListener("online", updateStatus);
   window.addEventListener("offline", updateStatus);
