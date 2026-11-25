@@ -45,7 +45,7 @@
   const ETAG_KEY = "pwa-demo-drive-etag:";
   const DRIVE_API = "https://www.googleapis.com/drive/v3";
   const UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
-  const POLL_MS = 15000;
+  const POLL_MS = 60000;
   const fileName = config.driveFileName || "PWA Demo state.json";
   const apiKey = config.googleDriveApiKey || "";
   const appId = (config.googleClientId || "").split("-")[0] || "";

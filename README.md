@@ -42,7 +42,7 @@ When you change any file, bump `CACHE_NAME` in `sw.js` so returning visitors get
 - **Sign in & connect Drive** is a single click: Google shows the account chooser and consent once, the app reads the profile, and it immediately creates (or finds) `PWA Demo state.json` in the user's My Drive and uploads the current local state. Existing tasks from the old localStorage-only version are merged in, not discarded.
 - On later visits, access renews silently. If consent was revoked, a **Connect Drive** button re-runs that same one-step flow. The Google popup must be opened from a click; browser popup blockers reject background attempts with `popup_failed_to_open`.
 - Local edits are saved in localStorage immediately, then pushed to Drive (debounced). If the device is offline, edits queue up locally and sync when it comes back.
-- The app polls Drive every 15 seconds for changes made by collaborators.
+- The app polls Drive every 60 seconds for changes made by collaborators.
 - The owner can invite collaborators with **Share**; they get writer access to the Drive file.
 - A collaborator chooses **Open shared file** once to pick that JSON file in Drive. With the `drive.file` scope, an app can only access files it created or that the user explicitly picked — sharing alone does not grant the app access.
 - Sharing is done through real Google Drive permissions: the file lives in the owner's Drive, and collaborators edit the file in their own Google accounts.
@@ -91,6 +91,6 @@ Any app can use it through `window.AppSync`:
 ## Limitations
 
 - Merge is per field, last-write-wins: simultaneous edits to the *same* field still have one winner. It is not an operational-transform/CRDT text editor.
-- Polling every 15 seconds means co-working is near-real-time, not instant.
+- Polling every 60 seconds means collaborator changes can take up to a minute to appear.
 - Tokens are kept in memory and requested with the narrow `drive.file` scope; no token or refresh token is stored.
 - The state is plain JSON in the user's Drive. It is not encrypted by the app; Drive's own access controls apply.
