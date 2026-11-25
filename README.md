@@ -41,7 +41,7 @@ When you change any file, bump `CACHE_NAME` in `sw.js` so returning visitors get
 
 The sidebar has **Tasks** and **Setup** pages. Setup contains two sections:
 
-1. **Account & Drive** — the "Sign in & connect Drive" button, sync status, and Sync now / Connect Drive controls.
+1. **Account & Drive** — the "Sign in & connect Drive" button, sync status, and a reconnect control when needed.
 2. **Sharing with others** — a short explanation of how collaboration works, the email invite form, and the "Open shared file" button.
 
 You can link directly to it with `#setup`.

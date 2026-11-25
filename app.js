@@ -11,7 +11,6 @@
   const syncStateEl = document.getElementById("sync-state");
   const syncDetailEl = document.getElementById("sync-detail");
   const connectBtn = document.getElementById("connect-drive");
-  const syncNowBtn = document.getElementById("sync-now");
   const openSharedBtn = document.getElementById("open-shared");
   const shareForm = document.getElementById("share-form");
   const shareEmail = document.getElementById("share-email");
@@ -128,7 +127,6 @@
     syncStateEl.textContent = info.message;
     syncStateEl.className = `sync-state ${info.state}`;
     syncDetailEl.textContent = info.connected ? `Drive file: ${info.fileName || info.fileId}` : "";
-    syncNowBtn.hidden = !info.connected;
     connectBtn.hidden = !info.needsConnect;
     shareForm.hidden = !info.connected;
   });
@@ -139,7 +137,6 @@
     openSharedBtn.hidden = !canUseDrive;
     if (!canUseDrive) {
       connectBtn.hidden = true;
-      syncNowBtn.hidden = true;
       shareForm.hidden = true;
     }
   });
@@ -148,14 +145,6 @@
     shareNote.textContent = "";
     try {
       await AppSync.connect();
-    } catch (err) {
-      shareNote.textContent = err.message;
-    }
-  });
-
-  syncNowBtn.addEventListener("click", async () => {
-    try {
-      await AppSync.syncNow();
     } catch (err) {
       shareNote.textContent = err.message;
     }
