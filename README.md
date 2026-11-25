@@ -45,7 +45,7 @@ When nobody is signed in, the app shows a single **Sign in to continue** page an
 
 ## Settings page
 
-The sidebar has **Tasks** and **Settings** pages. The signed-in user's avatar and name appear at the bottom of the sidebar. Settings contains three sections:
+The sidebar has **Tasks** and **Settings** pages. The signed-in user's avatar and name appear at the bottom of the sidebar, with **My Drive** or **Shared file** shown next to the name so it is clear where changes are being written. Settings contains three sections:
 
 1. **Account & Drive** — sync status, the Drive path (`PWA Demo/data.json`), the last sync time, a reconnect control when needed, and Sign out.
 2. **Share your file with others** — explanation and email invite form for giving collaborators editor access to your data file.

@@ -24,7 +24,7 @@
  *
  * Public API (window.AppSync):
  *   onChange(fn)             -> fn({ values, collections }) now and on every local/remote change
- *   onStatus(fn)             -> fn({ state, message, connected, fileId, filePath, lastSyncAt }) now and on status changes
+ *   onStatus(fn)             -> fn({ state, message, connected, fileId, source, fileLabel, lastSyncAt }) now and on status changes
  *   state()                  -> current plain state
  *   list(collection)         -> plain records (non-deleted), each with an `id`
  *   get(collection, id)      -> plain record or null
@@ -260,6 +260,15 @@
     });
   }
 
+  function fileSource() {
+    return fileId ? (isSharedFile(fileId) ? "shared" : "own") : "";
+  }
+
+  function fileLabel() {
+    if (!fileId) return "";
+    return isSharedFile(fileId) ? `Shared file · ${fileName}` : `My Drive · ${drivePath}`;
+  }
+
   function status() {
     return {
       state: syncState,
@@ -268,7 +277,9 @@
       needsConnect,
       fileId,
       fileName: fileId ? fileName : "",
-      filePath: fileId ? drivePath : "",
+      filePath: fileId ? (isSharedFile(fileId) ? fileName : drivePath) : "",
+      source: fileSource(),
+      fileLabel: fileLabel(),
       lastSyncAt
     };
   }
@@ -571,7 +582,7 @@
       }
       if (dirty || mode === "push") await upload();
       markSynced();
-      setStatus("synced", `Synced to your Google Drive · ${drivePath}`);
+      setStatus("synced", `Synced to ${fileLabel()}`);
     } catch (err) {
       if (err.status === 404) {
         fileId = null;
@@ -645,7 +656,7 @@
     await upload();
     if (generation !== authGeneration) return;
     markSynced();
-    setStatus("synced", `Synced to your Google Drive · ${drivePath}`);
+    setStatus("synced", `Synced to ${fileLabel()}`);
     startPoll();
   }
 
@@ -757,7 +768,7 @@
             setStatus("syncing", "Merging with the shared file…");
             await upload();
             markSynced();
-            setStatus("synced", `Synced to the shared file · ${fileName}`);
+            setStatus("synced", `Synced to ${fileLabel()}`);
             startPoll();
             resolve(id);
           } catch (err) {

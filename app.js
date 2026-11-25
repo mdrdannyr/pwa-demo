@@ -9,6 +9,7 @@
   const sidebarUser = document.getElementById("sidebar-user");
   const sidebarAvatar = document.getElementById("sidebar-avatar");
   const sidebarName = document.getElementById("sidebar-name");
+  const sidebarDrive = document.getElementById("sidebar-drive");
   const swState = document.getElementById("sw-state");
   const syncStateEl = document.getElementById("sync-state");
   const syncDetailEl = document.getElementById("sync-detail");
@@ -159,7 +160,10 @@
   AppSync.onStatus((info) => {
     syncStateEl.textContent = info.message;
     syncStateEl.className = `sync-state ${info.state}`;
-    syncDetailEl.textContent = info.connected ? `Drive file: ${info.filePath || info.fileName || info.fileId}` : "";
+    syncDetailEl.textContent = info.fileLabel || "";
+    sidebarDrive.hidden = !info.source;
+    sidebarDrive.textContent = info.source === "shared" ? "Shared file" : (info.source === "own" ? "My Drive" : "");
+    sidebarDrive.title = info.fileLabel || "";
     lastSyncValue = info.lastSyncAt || null;
     renderLastSync(lastSyncValue);
     connectBtn.hidden = !info.needsConnect;
