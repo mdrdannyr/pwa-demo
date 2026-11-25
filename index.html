@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PWA Demo</title>
+  <meta name="description" content="A small installable, offline-capable Progressive Web App demo.">
+  <meta name="theme-color" content="#4f46e5">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>PWA Demo</h1>
+    <span id="status" class="status" role="status">Checking…</span>
+  </header>
+
+  <main>
+    <form id="task-form" autocomplete="off">
+      <input id="task-input" type="text" placeholder="Add a task…" aria-label="New task" required>
+      <button type="submit">Add</button>
+    </form>
+
+    <ul id="task-list"></ul>
+    <p id="empty" class="empty" hidden>No tasks yet. Add one above. It works offline too.</p>
+
+    <button id="install-btn" class="install" hidden>Install app</button>
+  </main>
+
+  <footer>
+    <small>Tasks are saved on this device. <span id="sw-state"></span></small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
