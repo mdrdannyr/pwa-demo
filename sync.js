@@ -322,7 +322,8 @@
     let detail = "";
     try {
       const body = await res.json();
-      detail = (body.error && body.error.message) || "";
+      const error = body.error || {};
+      detail = error.message || (error.errors && error.errors[0] && error.errors[0].reason) || "";
     } catch {
       /* ignore */
     }
@@ -473,7 +474,12 @@
 
   function readableError(err) {
     const text = String((err && err.message) || err);
-    if (text.includes("403")) return "Google denied Drive access. Check the Drive API and file permissions.";
+    if (text.includes("serviceDisabled")) {
+      return "The Google Drive API is not enabled for this Cloud project. Enable it in Google Cloud Console, then reconnect.";
+    }
+    if (text.includes("insufficientPermissions") || text.includes("forbidden")) {
+      return `Google denied access to the Drive file: ${text}`;
+    }
     return text;
   }
 
