@@ -47,11 +47,13 @@ When nobody is signed in, the app shows a single **Sign in to continue** page an
 
 The sidebar has **Tasks** and **Settings** pages. The signed-in user's avatar and name appear at the bottom of the sidebar, with **My Drive** or **Shared file** shown next to the name so it is clear where changes are being written. Settings contains three sections:
 
-1. **Account & Drive** — sync status, the Drive path (`PWA Demo/data.json`), the last sync time, a reconnect control when needed, and Sign out.
+1. **Account & Drive** — sync status, the data file's **actual** Drive location, a link to open it in Drive, the last sync time, a reconnect control when needed, and Sign out. The commit SHA the app was built from appears at the bottom of the page.
 2. **Share your file with others** — explanation and email invite form for giving collaborators editor access to your data file.
 3. **Open a file shared with you** — explanation and the "Open shared file" button for loading someone else's shared data file.
 
 You can link directly to it with `#settings`.
+
+The version shown at the bottom comes from `version.js`, which is stamped from the current commit with `tools/stamp-version.sh` when a build is prepared.
 
 ## Drive sync and sharing
 

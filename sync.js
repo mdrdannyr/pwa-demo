@@ -71,6 +71,7 @@
   let needsConnect = false;
   let folderId = null;
   let lastSyncAt = null;
+  let actualPath = "";
 
   const stateListeners = new Set();
   const statusListeners = new Set();
@@ -266,7 +267,7 @@
 
   function fileLabel() {
     if (!fileId) return "";
-    return isSharedFile(fileId) ? `Shared file · ${fileName}` : `My Drive · ${drivePath}`;
+    return actualPath || (isSharedFile(fileId) ? `Shared file · ${fileName}` : `My Drive · ${drivePath}`);
   }
 
   function status() {
@@ -469,6 +470,23 @@
   // syncing into a file the user can no longer see. Existing installs used a
   // top-level "PWA Demo state.json"; move that same file into the folder and
   // rename it so its id and sharing survive.
+  async function describeFile(id, meta) {
+    const name = meta.name || fileName;
+    if (isSharedFile(id)) return `Shared file · ${name}`;
+    const folders = [];
+    for (const parent of (Array.isArray(meta.parents) ? meta.parents : [])) {
+      try {
+        const res = await api(`/files/${encodeURIComponent(parent)}?fields=name`);
+        if (!res.ok) continue;
+        const info = await res.json();
+        if (info.name) folders.push(info.name);
+      } catch {
+        /* ignore */
+      }
+    }
+    return folders.length ? `My Drive · ${folders.join(" / ")}/${name}` : `My Drive · ${name}`;
+  }
+
   async function checkFileState() {
     if (!fileId) return;
     const res = await api(`/files/${encodeURIComponent(fileId)}?fields=id,name,parents,ownedByMe,trashed`);
@@ -482,6 +500,7 @@
       await createFreshFile();
       return;
     }
+    actualPath = await describeFile(fileId, meta);
     if (meta.ownedByMe === false) {
       rememberShared(fileId);
       return;

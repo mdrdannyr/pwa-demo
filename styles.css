@@ -374,6 +374,22 @@ body.logged-out header { text-align: center; }
   border-radius: 14px;
 }
 
+.drive-link {
+  display: inline-block;
+  margin: 0.25rem 0 0.5rem;
+  color: var(--accent);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+.drive-link:hover { text-decoration: underline; }
+
+.app-version {
+  margin: 0.5rem 0 1rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 .login-card h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
 .login-card p { margin: 0; font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
 .login-card .setup-note { margin-top: 1.25rem; font-size: 0.8rem; }

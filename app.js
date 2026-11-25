@@ -20,6 +20,8 @@
   const syncStateEl = document.getElementById("sync-state");
   const syncDetailEl = document.getElementById("sync-detail");
   const lastSyncEl = document.getElementById("last-sync");
+  const openDriveLink = document.getElementById("open-in-drive");
+  const appVersion = document.getElementById("app-version");
   const connectBtn = document.getElementById("connect-drive");
   const settingsSignoutBtn = document.getElementById("settings-signout");
   const openSharedBtn = document.getElementById("open-shared");
@@ -169,6 +171,8 @@
     syncStateEl.textContent = info.message;
     syncStateEl.className = `sync-state ${info.state}`;
     syncDetailEl.textContent = info.fileLabel || "";
+    openDriveLink.hidden = !info.fileId;
+    if (info.fileId) openDriveLink.href = `https://drive.google.com/file/d/${encodeURIComponent(info.fileId)}/view`;
     const driveText = info.source === "shared" ? "Syncing to: Shared file" : (info.source === "own" ? "Syncing to: My Drive" : "");
     sidebarDrive.hidden = !info.source;
     sidebarDrive.textContent = driveText;
@@ -275,6 +279,7 @@
     swState.textContent = "Service workers not supported.";
   }
 
+  appVersion.textContent = `Version: ${window.APP_VERSION || "unknown"}`;
   migrateLegacyTasks();
   updateStatus();
   showPage(location.hash.slice(1));

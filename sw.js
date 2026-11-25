@@ -1,4 +1,4 @@
-const CACHE_NAME = "pwa-demo-v26";
+const CACHE_NAME = "pwa-demo-v27";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const APP_SHELL = [
   "./auth.js",
   "./sync.js",
   "./config.js",
+  "./version.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",
