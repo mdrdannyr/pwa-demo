@@ -12,44 +12,72 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <h1>PWA Demo</h1>
-    <div class="header-right">
-      <span id="status" class="status" role="status">Checking…</span>
-      <div id="auth" class="auth"></div>
-    </div>
-  </header>
-
-  <main>
-    <form id="task-form" autocomplete="off">
-      <input id="task-input" type="text" placeholder="Add a task…" aria-label="New task" required>
-      <button type="submit">Add</button>
-    </form>
-
-    <ul id="task-list"></ul>
-    <p id="empty" class="empty" hidden>No tasks yet. Add one above. It works offline too.</p>
-
-    <section id="drive-panel" class="drive-panel" aria-label="Google Drive sync">
-      <div class="drive-head">
-        <span id="sync-state" class="sync-state" role="status">Local only</span>
-        <button id="connect-drive" class="secondary" type="button" hidden>Connect Drive</button>
-        <button id="sync-now" class="secondary" type="button" hidden>Sync now</button>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand">PWA Demo</div>
+      <nav class="nav" aria-label="Pages">
+        <button class="nav-item active" type="button" data-page="tasks" aria-current="page">Tasks</button>
+        <button class="nav-item" type="button" data-page="setup">Setup</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <span id="status" class="status" role="status">Checking…</span>
+        <button id="install-btn" class="install" hidden>Install app</button>
       </div>
-      <p id="sync-detail" class="sync-detail"></p>
-      <button id="open-shared" class="secondary" type="button" hidden>Open shared file</button>
-      <form id="share-form" class="share-form" hidden>
-        <input id="share-email" type="email" placeholder="Collaborator's email" aria-label="Collaborator email" required>
-        <button type="submit">Share</button>
-      </form>
-      <p id="share-note" class="share-note" role="status"></p>
-    </section>
+    </aside>
 
-    <button id="install-btn" class="install" hidden>Install app</button>
-  </main>
+    <div class="app-main">
+      <header>
+        <h1 id="page-title">Tasks</h1>
+      </header>
 
-  <footer>
-    <small>Tasks are saved on this device and synced to your Google Drive when connected. <span id="sw-state"></span></small>
-  </footer>
+      <main>
+        <section id="page-tasks" class="page">
+          <form id="task-form" autocomplete="off">
+            <input id="task-input" type="text" placeholder="Add a task…" aria-label="New task" required>
+            <button type="submit">Add</button>
+          </form>
+
+          <ul id="task-list"></ul>
+          <p id="empty" class="empty" hidden>No tasks yet. Add one above. It works offline too.</p>
+        </section>
+
+        <section id="page-setup" class="page" hidden>
+          <article class="setup-card">
+            <h2>Account &amp; Drive</h2>
+            <p class="setup-intro">Sign in once to back up your state in your own Google Drive. This also grants the app access to that one state file — nothing else in your Drive.</p>
+            <div id="auth" class="auth"></div>
+            <div class="sync-row">
+              <span id="sync-state" class="sync-state" role="status">Local only</span>
+              <button id="connect-drive" class="secondary" type="button" hidden>Connect Drive</button>
+              <button id="sync-now" class="secondary" type="button" hidden>Sync now</button>
+            </div>
+            <p id="sync-detail" class="sync-detail"></p>
+          </article>
+
+          <article class="setup-card">
+            <h2>Sharing with others</h2>
+            <p class="setup-intro">The state file stays in your Drive. You can invite people as editors, and their changes merge with yours.</p>
+            <ol class="setup-steps">
+              <li>Invite a collaborator by email below. Google sends them a notification with access to <strong>PWA Demo state.json</strong>.</li>
+              <li>They open this app, come to this Setup page, and click <strong>Open shared file</strong>. Google's narrow Drive permission requires this one-time step.</li>
+              <li>In the picker they choose <strong>Shared with me</strong> and select that JSON file. After that, edits sync automatically; the app checks for updates every 60 seconds.</li>
+            </ol>
+            <p class="setup-note">You can also manage or revoke access at any time in Google Drive.</p>
+            <form id="share-form" class="share-form" hidden>
+              <input id="share-email" type="email" placeholder="Collaborator's email" aria-label="Collaborator email" required>
+              <button type="submit">Share</button>
+            </form>
+            <button id="open-shared" class="secondary" type="button" hidden>Open shared file</button>
+            <p id="share-note" class="share-note" role="status"></p>
+          </article>
+        </section>
+      </main>
+
+      <footer>
+        <small>Tasks are saved on this device and synced to your Google Drive when connected. <span id="sw-state"></span></small>
+      </footer>
+    </div>
+  </div>
 
   <script src="config.js"></script>
   <script src="auth.js"></script>

@@ -16,8 +16,36 @@
   const shareForm = document.getElementById("share-form");
   const shareEmail = document.getElementById("share-email");
   const shareNote = document.getElementById("share-note");
+  const pageTitle = document.getElementById("page-title");
+  const navButtons = document.querySelectorAll(".nav-item");
+  const pages = {
+    tasks: document.getElementById("page-tasks"),
+    setup: document.getElementById("page-setup")
+  };
 
   let auth = null;
+
+  // ---------- Pages ----------
+  function showPage(name) {
+    const page = pages[name] ? name : "tasks";
+    Object.entries(pages).forEach(([key, el]) => {
+      el.hidden = key !== page;
+    });
+    navButtons.forEach((button) => {
+      const active = button.dataset.page === page;
+      button.classList.toggle("active", active);
+      if (active) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    });
+    pageTitle.textContent = page === "setup" ? "Setup" : "Tasks";
+    document.title = page === "setup" ? "Setup · PWA Demo" : "PWA Demo";
+    if (location.hash !== `#${page}`) history.replaceState(null, "", `#${page}`);
+  }
+
+  navButtons.forEach((button) => {
+    button.addEventListener("click", () => showPage(button.dataset.page));
+  });
+  window.addEventListener("hashchange", () => showPage(location.hash.slice(1)));
 
   function newId() {
     return (window.crypto && crypto.randomUUID)
@@ -208,4 +236,5 @@
 
   migrateLegacyTasks();
   updateStatus();
+  showPage(location.hash.slice(1));
 })();
