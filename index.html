@@ -34,7 +34,16 @@
       </header>
 
       <main>
-        <section id="page-tasks" class="page">
+        <section id="page-login" class="page login-page" hidden>
+          <div class="login-card">
+            <h2>Sign in to continue</h2>
+            <p>Your tasks and settings are tied to your Google account. Signing in also connects Drive so your changes are backed up automatically.</p>
+            <div id="auth" class="auth auth-login"></div>
+            <p class="setup-note">Your data file lives in your own Drive at <strong>PWA Demo/data.json</strong>. Nothing else in your Drive is accessed.</p>
+          </div>
+        </section>
+
+        <section id="page-tasks" class="page" hidden>
           <form id="task-form" autocomplete="off">
             <input id="task-input" type="text" placeholder="Add a task…" aria-label="New task" required>
             <button type="submit">Add</button>
@@ -47,11 +56,11 @@
         <section id="page-settings" class="page" hidden>
           <article class="setup-card">
             <h2>Account &amp; Drive</h2>
-            <p class="setup-intro">Sign in once to back up your state in your own Google Drive. This also grants the app access to that one data file — nothing else in your Drive.</p>
-            <div id="auth" class="auth"></div>
+            <p class="setup-intro">Your state is backed up in your own Google Drive. The app only accesses this one data file — nothing else in your Drive.</p>
             <div class="sync-row">
               <span id="sync-state" class="sync-state" role="status">Local only</span>
               <button id="connect-drive" class="secondary" type="button" hidden>Connect Drive</button>
+              <button id="settings-signout" class="secondary" type="button">Sign out</button>
             </div>
             <p id="sync-detail" class="sync-detail"></p>
             <p id="last-sync" class="sync-detail" hidden>Last synced: —</p>

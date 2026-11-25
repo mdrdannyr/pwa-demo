@@ -14,6 +14,7 @@
   const syncDetailEl = document.getElementById("sync-detail");
   const lastSyncEl = document.getElementById("last-sync");
   const connectBtn = document.getElementById("connect-drive");
+  const settingsSignoutBtn = document.getElementById("settings-signout");
   const openSharedBtn = document.getElementById("open-shared");
   const shareForm = document.getElementById("share-form");
   const shareEmail = document.getElementById("share-email");
@@ -22,6 +23,7 @@
   const pageTitle = document.getElementById("page-title");
   const navButtons = document.querySelectorAll(".nav-item");
   const pages = {
+    login: document.getElementById("page-login"),
     tasks: document.getElementById("page-tasks"),
     settings: document.getElementById("page-settings")
   };
@@ -30,8 +32,16 @@
   let lastSyncValue = null;
 
   // ---------- Pages ----------
+  function isSignedIn() {
+    return !!(auth && auth.signedIn && auth.profile && auth.profile.sub);
+  }
+
   function showPage(name) {
-    const page = pages[name] ? name : "tasks";
+    const signedIn = isSignedIn();
+    let page = pages[name] ? name : "tasks";
+    if (!signedIn) page = "login";
+    else if (page === "login") page = "tasks";
+
     Object.entries(pages).forEach(([key, el]) => {
       el.hidden = key !== page;
     });
@@ -41,8 +51,9 @@
       if (active) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");
     });
-    pageTitle.textContent = page === "settings" ? "Settings" : "Tasks";
-    document.title = page === "settings" ? "Settings · PWA Demo" : "PWA Demo";
+    pageTitle.textContent = page === "login" ? "Sign in" : (page === "settings" ? "Settings" : "Tasks");
+    document.title = page === "login" ? "Sign in · PWA Demo" : (page === "settings" ? "Settings · PWA Demo" : "PWA Demo");
+    document.body.classList.toggle("logged-out", !signedIn);
     if (location.hash !== `#${page}`) history.replaceState(null, "", `#${page}`);
   }
 
@@ -179,7 +190,10 @@
       connectBtn.hidden = true;
       shareForm.hidden = true;
     }
+    showPage(location.hash.slice(1));
   });
+
+  settingsSignoutBtn.addEventListener("click", () => AppAuth.signOut());
 
   connectBtn.addEventListener("click", async () => {
     inviteNote.textContent = "";

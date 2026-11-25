@@ -287,6 +287,42 @@ input[type="text"]:focus, input[type="email"]:focus { outline: 2px solid var(--a
 
 #open-shared { margin-top: 0.25rem; }
 
+/* ---------- Login gate ---------- */
+body.logged-out .sidebar,
+body.logged-out footer { display: none; }
+
+body.logged-out header { text-align: center; }
+
+.login-page {
+  min-height: calc(100vh - 120px);
+  display: grid;
+  place-items: center;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 2rem;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.login-card h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
+.login-card p { margin: 0; font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+.login-card .setup-note { margin-top: 1.25rem; font-size: 0.8rem; }
+
+.auth-login {
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.auth-login .google-connect {
+  padding: 0.7rem 1.1rem;
+  font-size: 1rem;
+}
+
 /* ---------- Small screens ---------- */
 @media (max-width: 720px) {
   .app-layout { flex-direction: column; }
