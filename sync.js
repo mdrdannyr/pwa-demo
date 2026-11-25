@@ -525,15 +525,12 @@
   }
 
   // Must be called directly from a click handler: Google's OAuth popup needs a user gesture.
+  // AppAuth.connect() signs in and gets Drive access in one popup, then the auth listener
+  // finishes the Drive setup with the token it just obtained.
   function connect() {
-    if (!profile) return Promise.reject(new Error("Sign in with Google first"));
-    const generation = ++authGeneration;
-    setStatus("connecting", "Opening Google permission…");
-    return window.AppAuth.getAccessToken()
-      .then(() => finishConnect(generation))
-      .catch((err) => {
-        if (generation === authGeneration) setStatus("error", readableError(err));
-      });
+    return window.AppAuth.connect().catch((err) => {
+      setStatus("error", readableError(err));
+    });
   }
 
   function handleAuth(auth) {
@@ -545,7 +542,7 @@
     if (!profile) {
       fileId = null;
       etag = null;
-      setStatus("local", auth.signedIn ? "Sign in again to enable Drive sync." : "Local only — sign in to back up in Drive.");
+      setStatus("local", auth.signedIn ? "Sign in again to enable Drive sync." : "Local only — sign in & connect Drive to back up.");
       return;
     }
 
