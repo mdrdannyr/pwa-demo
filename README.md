@@ -6,6 +6,7 @@ A tiny installable, offline-capable Progressive Web App: a to-do list that can s
 
 - Web app manifest (installable, standalone display)
 - Service worker that pre-caches the app shell and works offline
+- Responsive layout: sidebar on desktop, bottom navigation on phones, fluid spacing and touch-sized controls
 - Online/offline indicator and automatic PWA install support from the browser
 - Light and dark themes
 - Login gate: Tasks and Settings are only available after signing in

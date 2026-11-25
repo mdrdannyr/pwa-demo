@@ -139,12 +139,8 @@
   // ---------- Last sync display ----------
   function formatLastSync(timestamp) {
     const date = new Date(timestamp);
-    const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
-    if (seconds < 60) return "just now";
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
-    const sameDay = date.toDateString() === new Date().toDateString();
-    if (sameDay && seconds < 86400) return `${Math.floor(seconds / 3600)} hr ago`;
-    return date.toLocaleString();
+    const pad = (value) => String(value).padStart(2, "0");
+    return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
   }
 
   function renderLastSync(timestamp) {
@@ -152,7 +148,7 @@
     if (!timestamp) return;
     const label = formatLastSync(timestamp);
     lastSyncEl.textContent = `Last synced: ${label}`;
-    lastSyncEl.title = new Date(timestamp).toLocaleString();
+    lastSyncEl.title = label;
   }
 
   setInterval(() => renderLastSync(lastSyncValue), 60000);
