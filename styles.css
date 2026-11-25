@@ -398,12 +398,13 @@ body.logged-out header { text-align: center; }
   }
   .status { font-size: 0.7rem; padding: 0.2rem 0.45rem; }
   .sidebar-user {
-    max-width: 110px;
+    max-width: 150px;
     padding: 0;
     border: 0;
   }
   .sidebar-user .avatar { width: 32px; height: 32px; }
   .sidebar-name { font-size: 0.75rem; }
+  .sidebar-drive { font-size: 0.65rem; }
 
   header {
     position: sticky;
@@ -424,7 +425,7 @@ body.logged-out header { text-align: center; }
 }
 
 @media (max-width: 420px) {
-  .sidebar-name { max-width: 78px; }
+  .sidebar-name { max-width: 110px; }
   .login-card { padding: 1.25rem; }
   .setup-steps { padding-left: 1.1rem; }
 }

@@ -162,7 +162,7 @@
     syncStateEl.className = `sync-state ${info.state}`;
     syncDetailEl.textContent = info.fileLabel || "";
     sidebarDrive.hidden = !info.source;
-    sidebarDrive.textContent = info.source === "shared" ? "Shared file" : (info.source === "own" ? "My Drive" : "");
+    sidebarDrive.textContent = info.source === "shared" ? "Syncing to: Shared file" : (info.source === "own" ? "Syncing to: My Drive" : "");
     sidebarDrive.title = info.fileLabel || "";
     lastSyncValue = info.lastSyncAt || null;
     renderLastSync(lastSyncValue);
