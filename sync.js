@@ -359,6 +359,40 @@
     }
   }
 
+  function rememberFile(id) {
+    fileId = id;
+    try {
+      localStorage.setItem(FILE_KEY + profile.sub, id);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function forgetFile() {
+    try {
+      if (fileId) localStorage.removeItem(ETAG_KEY + fileId);
+      localStorage.removeItem(FILE_KEY + profile.sub);
+      localStorage.removeItem(OWNED_KEY + profile.sub);
+      localStorage.removeItem(SHARED_KEY + profile.sub);
+      localStorage.removeItem(LAST_SYNC_KEY + profile.sub);
+    } catch {
+      /* ignore */
+    }
+    fileId = null;
+    etag = null;
+    lastSyncAt = null;
+  }
+
+  // A deleted or trashed file can no longer be used. Start a fresh one seeded
+  // with the local document, and make sure the next upload pushes that state.
+  async function createFreshFile() {
+    forgetFile();
+    const id = await findOrCreateFile();
+    rememberFile(id);
+    dirty = true;
+    return id;
+  }
+
   function loadLastSync() {
     try {
       const value = Number(localStorage.getItem(LAST_SYNC_KEY + (profile ? profile.sub : "")));
@@ -428,13 +462,24 @@
     return folderId;
   }
 
-  // Existing installs used a single top-level "PWA Demo state.json". Move that
-  // same file into the new folder and rename it so its id and sharing survive.
-  async function normalizeFileLocation() {
-    if (!fileId || isSharedFile(fileId)) return;
-    const res = await api(`/files/${encodeURIComponent(fileId)}?fields=id,name,parents,ownedByMe`);
+  // Verify the saved file is still usable. Drive keeps trashed files readable
+  // and writable by id, so checking the metadata is the only way to avoid
+  // syncing into a file the user can no longer see. Existing installs used a
+  // top-level "PWA Demo state.json"; move that same file into the folder and
+  // rename it so its id and sharing survive.
+  async function checkFileState() {
+    if (!fileId) return;
+    const res = await api(`/files/${encodeURIComponent(fileId)}?fields=id,name,parents,ownedByMe,trashed`);
+    if (res.status === 404) {
+      await createFreshFile();
+      return;
+    }
     if (!res.ok) return; // the following fetch/sync will report the real error
     const meta = await res.json();
+    if (meta.trashed) {
+      await createFreshFile();
+      return;
+    }
     if (meta.ownedByMe === false) {
       rememberShared(fileId);
       return;
@@ -576,6 +621,8 @@
     syncing = true;
     setStatus("syncing", mode === "pull" ? "Checking Drive for changes…" : "Saving to Drive…");
     try {
+      await checkFileState();
+      if (!fileId) return;
       if (mode === "pull") {
         const remote = await fetchFile(fileId, etagFor(fileId));
         if (remote) applyRemote(remote);
@@ -585,14 +632,14 @@
       setStatus("synced", `Synced to ${fileLabel()}`);
     } catch (err) {
       if (err.status === 404) {
-        fileId = null;
-        rememberEtag("", fileId);
         try {
-          localStorage.removeItem(FILE_KEY + profile.sub);
-        } catch {
-          /* ignore */
+          await createFreshFile();
+          await upload();
+          markSynced();
+          setStatus("synced", `Synced to ${fileLabel()}`);
+        } catch (recreateErr) {
+          setStatus("error", readableError(recreateErr));
         }
-        setStatus("error", "The Drive file was removed. Reconnect to create a new one.");
       } else {
         setStatus(navigator.onLine ? "error" : "offline", readableError(err));
       }
@@ -638,19 +685,20 @@
   // ---------- Auth lifecycle ----------
   async function finishConnect(generation) {
     if (fileId) {
-      await normalizeFileLocation();
+      await checkFileState();
     } else {
-      fileId = await findOrCreateFile();
-      try {
-        localStorage.setItem(FILE_KEY + profile.sub, fileId);
-      } catch {
-        /* ignore */
-      }
+      await createFreshFile();
     }
     if (generation !== authGeneration || !fileId) return;
 
-    const remote = await fetchFile(fileId, etagFor(fileId));
-    if (generation !== authGeneration) return;
+    let remote = null;
+    try {
+      remote = await fetchFile(fileId, etagFor(fileId));
+    } catch (err) {
+      if (err.status !== 404) throw err;
+      await createFreshFile();
+    }
+    if (generation !== authGeneration || !fileId) return;
     if (remote) applyRemote(remote);
 
     await upload();

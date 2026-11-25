@@ -59,7 +59,7 @@ You can link directly to it with `#settings`.
 - Installs that used the old top-level `PWA Demo state.json` are migrated automatically: the same file is moved into the folder and renamed, keeping its id and sharing permissions.
 - On later visits, access renews silently. If consent was revoked, a **Connect Drive** button re-runs that same one-step flow. The Google popup must be opened from a click; browser popup blockers reject background attempts with `popup_failed_to_open`.
 - Local edits are saved in localStorage immediately, then pushed to Drive (debounced). If the device is offline, edits queue up locally and sync when it comes back.
-- The app polls Drive every 60 seconds for changes made by collaborators, and shows the last successful sync time on the Settings page.
+- The app polls Drive every 60 seconds for changes made by collaborators, and shows the last successful sync time on the Settings page. If the saved data file is deleted or moved to Trash, the next sync creates a fresh `PWA Demo/data.json` from the local state instead of reporting success against a hidden file.
 - The owner can invite collaborators with **Share**; they get writer access to the Drive file.
 - A collaborator chooses **Open shared file** once to pick that JSON file in Drive. With the `drive.file` scope, an app can only access files it created or that the user explicitly picked — sharing alone does not grant the app access.
 - Sharing is done through real Google Drive permissions: the file lives in the owner's Drive, and collaborators edit the file in their own Google accounts.
