@@ -63,6 +63,7 @@
   let pollTimer = null;
   let syncState = "local";
   let message = "Local only — sign in to back up in Drive.";
+  let needsConnect = false;
 
   const stateListeners = new Set();
   const statusListeners = new Set();
@@ -257,6 +258,7 @@
       state: syncState,
       message,
       connected: !!fileId,
+      needsConnect,
       fileId,
       fileName: fileId ? fileName : ""
     };
@@ -276,6 +278,7 @@
   function setStatus(nextState, nextMessage) {
     syncState = nextState;
     message = nextMessage;
+    needsConnect = !!profile && (nextState === "ready" || nextState === "error");
     emitStatus();
   }
 
@@ -306,8 +309,8 @@
     }
   }
 
-  async function api(path, options = {}) {
-    const token = await window.AppAuth.getAccessToken();
+  async function api(path, options = {}, tokenOptions = { silentOnly: true }) {
+    const token = await window.AppAuth.getAccessToken(tokenOptions);
     return fetch(`${DRIVE_API}${path}`, {
       ...options,
       headers: { Authorization: `Bearer ${token}`, ...(options.headers || {}) }
@@ -340,7 +343,7 @@
       return files[0].id;
     }
 
-    const token = await window.AppAuth.getAccessToken();
+    const token = await window.AppAuth.getAccessToken({ silentOnly: true });
     const boundary = `----pwa-state-${Date.now().toString(36)}`;
     const metadata = {
       name: fileName,
@@ -377,7 +380,7 @@
 
   // Returns null when the file is unchanged (HTTP 304), otherwise a document.
   async function fetchFile(id, conditionalEtag) {
-    const token = await window.AppAuth.getAccessToken();
+    const token = await window.AppAuth.getAccessToken({ silentOnly: true });
     const headers = { Authorization: `Bearer ${token}` };
     if (conditionalEtag) headers["If-None-Match"] = conditionalEtag;
     const res = await fetch(`${DRIVE_API}/files/${encodeURIComponent(id)}?alt=media`, { headers });
@@ -400,7 +403,7 @@
   async function upload() {
     let attempts = 0;
     while (attempts++ < 4) {
-      const token = await window.AppAuth.getAccessToken();
+      const token = await window.AppAuth.getAccessToken({ silentOnly: true });
       const headers = {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json"
@@ -494,7 +497,40 @@
   }
 
   // ---------- Auth lifecycle ----------
-  async function handleAuth(auth) {
+  async function finishConnect(generation) {
+    if (!fileId) {
+      fileId = await findOrCreateFile();
+      try {
+        localStorage.setItem(FILE_KEY + profile.sub, fileId);
+      } catch {
+        /* ignore */
+      }
+    }
+    if (generation !== authGeneration || !fileId) return;
+
+    const remote = await fetchFile(fileId, etagFor(fileId));
+    if (generation !== authGeneration) return;
+    if (remote) applyRemote(remote);
+
+    await upload();
+    if (generation !== authGeneration) return;
+    setStatus("synced", `Synced to your Google Drive · ${fileName}`);
+    startPoll();
+  }
+
+  // Must be called directly from a click handler: Google's OAuth popup needs a user gesture.
+  function connect() {
+    if (!profile) return Promise.reject(new Error("Sign in with Google first"));
+    const generation = ++authGeneration;
+    setStatus("connecting", "Opening Google permission…");
+    return window.AppAuth.getAccessToken()
+      .then(() => finishConnect(generation))
+      .catch((err) => {
+        if (generation === authGeneration) setStatus("error", readableError(err));
+      });
+  }
+
+  function handleAuth(auth) {
     const next = auth.signedIn && auth.profile && auth.profile.sub ? auth.profile : null;
     profile = next;
     stopPoll();
@@ -513,31 +549,18 @@
       fileId = null;
     }
     etag = etagFor(fileId);
-    setStatus("connecting", "Connecting to Drive…");
+    setStatus("connecting", "Checking saved Drive access…");
 
     const generation = ++authGeneration;
-    try {
-      if (!fileId) {
-        fileId = await findOrCreateFile();
-        try {
-          localStorage.setItem(FILE_KEY + profile.sub, fileId);
-        } catch {
-          /* ignore */
-        }
-      }
-      if (generation !== authGeneration || !fileId) return;
-
-      const remote = await fetchFile(fileId, etagFor(fileId));
-      if (generation !== authGeneration) return;
-      if (remote) applyRemote(remote);
-
-      await upload();
-      if (generation !== authGeneration) return;
-      setStatus("synced", `Synced to your Google Drive · ${fileName}`);
-      startPoll();
-    } catch (err) {
-      if (generation === authGeneration) setStatus("error", readableError(err));
-    }
+    // Silent renewal only here: no popup outside a user gesture.
+    window.AppAuth.getAccessToken({ silentOnly: true })
+      .then(() => finishConnect(generation))
+      .catch(() => {
+        if (generation !== authGeneration) return;
+        setStatus("ready", fileId
+          ? "Click Connect Drive to resume syncing."
+          : "Click Connect Drive to back up in Drive.");
+      });
   }
 
   // ---------- Picker (needed by drive.file to access a file shared by someone else) ----------
@@ -621,7 +644,7 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "user", role: chosenRole, emailAddress: email })
-    });
+    }, { silentOnly: false });
     await check(res, "Sharing Drive file");
     return res.json();
   }
@@ -673,6 +696,7 @@
     syncNow() {
       return runSync("pull");
     },
+    connect,
     openPicker,
     share
   };

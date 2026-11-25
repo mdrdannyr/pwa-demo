@@ -10,6 +10,7 @@
   const installBtn = document.getElementById("install-btn");
   const syncStateEl = document.getElementById("sync-state");
   const syncDetailEl = document.getElementById("sync-detail");
+  const connectBtn = document.getElementById("connect-drive");
   const syncNowBtn = document.getElementById("sync-now");
   const openSharedBtn = document.getElementById("open-shared");
   const shareForm = document.getElementById("share-form");
@@ -100,6 +101,7 @@
     syncStateEl.className = `sync-state ${info.state}`;
     syncDetailEl.textContent = info.connected ? `Drive file: ${info.fileName || info.fileId}` : "";
     syncNowBtn.hidden = !info.connected;
+    connectBtn.hidden = !info.needsConnect;
     shareForm.hidden = !info.connected;
   });
 
@@ -108,8 +110,18 @@
     const canUseDrive = !!(info.signedIn && info.profile && info.profile.sub);
     openSharedBtn.hidden = !canUseDrive;
     if (!canUseDrive) {
+      connectBtn.hidden = true;
       syncNowBtn.hidden = true;
       shareForm.hidden = true;
+    }
+  });
+
+  connectBtn.addEventListener("click", async () => {
+    shareNote.textContent = "";
+    try {
+      await AppSync.connect();
+    } catch (err) {
+      shareNote.textContent = err.message;
     }
   });
 

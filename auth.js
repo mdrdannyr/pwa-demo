@@ -221,68 +221,80 @@
     tokenClient.requestAccessToken({ prompt });
   }
 
-  // Access tokens are short-lived and are requested only when Drive is actually used.
-  // After the first grant, an empty prompt renews silently; fall back to consent if needed.
-  async function getAccessToken() {
+  function initTokenClient() {
+    if (!googleReady) throw new Error("Google sign-in is not ready");
+    if (!google.accounts.oauth2 || !google.accounts.oauth2.initTokenClient) {
+      throw new Error("Google token client is unavailable");
+    }
+    if (tokenClient) return;
+
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: DRIVE_SCOPE,
+      callback: (response) => {
+        if (response && response.access_token) {
+          accessToken = response.access_token;
+          tokenExpiresAt = Date.now() + (Number(response.expires_in) || 3600) * 1000;
+          consentGranted = true;
+          saveConsent(true);
+          // Do not notify auth listeners here: a token refresh is not a sign-in change.
+          if (pendingToken) {
+            const pending = pendingToken;
+            pendingToken = null;
+            pending.resolve(accessToken);
+          }
+        } else {
+          const pending = pendingToken;
+          if (pending && !pending.retried && !pending.silentOnly && consentGranted) {
+            pending.retried = true;
+            requestToken("consent");
+            return;
+          }
+          const err = new Error(
+            (response && (response.error_description || response.error)) || "Google did not return an access token"
+          );
+          if (pending) {
+            pendingToken = null;
+            pending.reject(err);
+          }
+        }
+      },
+      error_callback: (err) => {
+        const pending = pendingToken;
+        if (!pending) return;
+        pendingToken = null;
+        const type = err && err.type;
+        const text = type === "popup_failed_to_open"
+          ? "Google's permission popup was blocked. Click Connect Drive again and allow popups for this site."
+          : (type || "Google permission request failed");
+        pending.reject(new Error(text));
+      }
+    });
+  }
+
+  // Access tokens are short-lived. Interactive requests must start in a user gesture,
+  // otherwise the browser blocks Google's popup (popup_failed_to_open).
+  // Background calls use silentOnly and simply fail if a fresh token cannot be obtained.
+  async function getAccessToken(options = {}) {
+    const silentOnly = options.silentOnly === true;
     const profile = loadProfile();
     if (!profile || !profile.sub) throw new Error("Sign in with Google to use Drive");
     if (accessToken && Date.now() < tokenExpiresAt - 60000) return accessToken;
 
-    await loadGoogle();
-    if (!google.accounts.oauth2 || !google.accounts.oauth2.initTokenClient) {
-      throw new Error("Google token client is unavailable");
+    if (!googleReady) {
+      if (silentOnly) throw new Error("Google sign-in is not ready");
+      await loadGoogle();
     }
-
-    if (!tokenClient) {
-      tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: DRIVE_SCOPE,
-        callback: (response) => {
-          if (response && response.access_token) {
-            accessToken = response.access_token;
-            tokenExpiresAt = Date.now() + (Number(response.expires_in) || 3600) * 1000;
-            consentGranted = true;
-            saveConsent(true);
-            // Do not notify auth listeners here: a token refresh is not a sign-in change.
-            if (pendingToken) {
-              const pending = pendingToken;
-              pendingToken = null;
-              pending.resolve(accessToken);
-            }
-          } else {
-            const pending = pendingToken;
-            if (pending && !pending.retried && consentGranted) {
-              pending.retried = true;
-              requestToken("consent");
-              return;
-            }
-            const err = new Error(
-              (response && (response.error_description || response.error)) || "Google did not return an access token"
-            );
-            if (pending) {
-              pendingToken = null;
-              pending.reject(err);
-            }
-          }
-        },
-        error_callback: (err) => {
-          if (pendingToken) {
-            const pending = pendingToken;
-            pendingToken = null;
-            pending.reject(new Error((err && err.type) || "Google permission request failed"));
-          }
-        }
-      });
-    }
+    initTokenClient();
 
     return new Promise((resolve, reject) => {
       if (pendingToken) {
         reject(new Error("A Google permission request is already in progress"));
         return;
       }
-      pendingToken = { resolve, reject, retried: false };
+      pendingToken = { resolve, reject, retried: false, silentOnly };
       try {
-        requestToken(consentGranted ? "" : "consent");
+        requestToken(silentOnly ? "" : "consent");
       } catch (err) {
         pendingToken = null;
         reject(err);

@@ -39,7 +39,7 @@ When you change any file, bump `CACHE_NAME` in `sw.js` so returning visitors get
 
 ## Drive sync and sharing
 
-- On first sign-in, the app creates (or finds) `PWA Demo state.json` in the user's My Drive and uploads the current local state. Existing tasks from the old localStorage-only version are merged in, not discarded.
+- After sign-in, the app tries to renew Drive access silently. If that is not possible, it shows **Connect Drive**: clicking it asks for the `drive.file` permission in a user-initiated popup (browser popup blockers reject background attempts with `popup_failed_to_open`). Once connected, it creates (or finds) `PWA Demo state.json` in the user's My Drive and uploads the current local state. Existing tasks from the old localStorage-only version are merged in, not discarded.
 - Local edits are saved in localStorage immediately, then pushed to Drive (debounced). If the device is offline, edits queue up locally and sync when it comes back.
 - The app polls Drive every 15 seconds for changes made by collaborators.
 - The owner can invite collaborators with **Share**; they get writer access to the Drive file.
@@ -80,6 +80,7 @@ Any app can use it through `window.AppSync`:
 | `list(collection)` / `get(collection, id)` | Read records |
 | `upsert(collection, id, patch)` / `remove(collection, id)` | Edit records |
 | `set(key, value)` | Store a top-level value |
+| `connect()` | Request Drive access from a user click, then link the state file |
 | `syncNow()` | Pull and push immediately |
 | `openPicker()` | Open an existing (shared) state file |
 | `share(email, role)` | Invite a collaborator (`reader`, `commenter`, `writer`) |
