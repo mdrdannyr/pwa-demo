@@ -1,9 +1,11 @@
-const CACHE_NAME = "pwa-demo-v1";
+const CACHE_NAME = "pwa-demo-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./auth.js",
+  "./config.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",
