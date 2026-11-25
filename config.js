@@ -13,6 +13,6 @@
 //      Restrict it to your HTTP referrers and to the Google Picker API.
 window.APP_CONFIG = {
   googleClientId: "1018863696965-np77av63b1l6hdfk63t2h0lkmnnelte9.apps.googleusercontent.com",
-  googleDriveApiKey: "YOUR_GOOGLE_API_KEY",
+  googleDriveApiKey: "AIzaSyBav-jQflfQ8mHj0uJQbRywUebqvQpGIn8",
   driveFileName: "PWA Demo state.json"
 };
