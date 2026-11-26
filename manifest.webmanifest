@@ -1,7 +1,7 @@
 {
-  "name": "PWA Demo",
-  "short_name": "PWA Demo",
-  "description": "A small installable, offline-capable Progressive Web App demo.",
+  "name": "PWA Demo - Task Collaboration with GDrive",
+  "short_name": "Task Collab",
+  "description": "An offline-capable task list that syncs its data file to your own Google Drive and supports collaboration.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

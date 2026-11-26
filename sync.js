@@ -145,7 +145,7 @@
       throw new Error("The Drive file does not contain valid JSON");
     }
     if (!raw || raw.format !== FORMAT) {
-      throw new Error("That file is not a PWA Demo data file");
+      throw new Error("That file is not a task collaboration data file");
     }
     return normalizeDoc(raw);
   }
@@ -816,7 +816,7 @@
         .setOAuthToken(token)
         .addView(myDrive)
         .addView(shared)
-        .setTitle("Choose a shared PWA Demo data file")
+        .setTitle("Choose a shared task collaboration data file")
         .setCallback(async (data) => {
           if (data.action === google.picker.Action.CANCEL) {
             resolve(null);

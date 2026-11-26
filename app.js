@@ -62,7 +62,11 @@
     });
     mobileSettingsBtn.classList.toggle("active", page === "settings");
     pageTitle.textContent = page === "login" ? "Sign in" : (page === "settings" ? "Settings" : "Tasks");
-    document.title = page === "login" ? "Sign in · PWA Demo" : (page === "settings" ? "Settings · PWA Demo" : "PWA Demo");
+    document.title = page === "login"
+      ? "Sign in · PWA Demo - Task Collaboration with GDrive"
+      : (page === "settings"
+        ? "Settings · PWA Demo - Task Collaboration with GDrive"
+        : "PWA Demo - Task Collaboration with GDrive");
     document.body.classList.toggle("logged-out", !signedIn);
     if (location.hash !== `#${page}`) history.replaceState(null, "", `#${page}`);
   }
